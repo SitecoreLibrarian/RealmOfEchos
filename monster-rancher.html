@@ -1,0 +1,4250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Realm of Echoes</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323:wght@400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080c10;
+    --panel: #0d1520;
+    --border: #1e3a2a;
+    --accent: #2aff7a;
+    --accent2: #ff6b2a;
+    --accent3: #2ab8ff;
+    --gold: #ffd84a;
+    --text: #c8e8d0;
+    --dim: #4a6a50;
+    --danger: #ff3a3a;
+    --shadow-el: #c084fc;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'VT323', monospace;
+    font-size: 18px;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── TITLE BAR ── */
+  #titlebar {
+    background: #060a0e;
+    border-bottom: 2px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 14px;
+    height: 38px;
+    flex-shrink: 0;
+  }
+  #titlebar .logo {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 9px;
+    color: var(--accent);
+    letter-spacing: 1px;
+  }
+  #titlebar .gold-disp { color: var(--gold); margin-left: auto; font-size: 20px; }
+  .nav-btn {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'VT323', monospace;
+    font-size: 17px;
+    padding: 3px 12px;
+    cursor: pointer;
+    transition: border-color .15s, color .15s;
+  }
+  .nav-btn:hover, .nav-btn.active { border-color: var(--accent); color: var(--accent); }
+
+  /* ── SCREENS ── */
+  .screen { display: none; flex: 1; overflow: hidden; }
+  .screen.active { display: flex; }
+
+  /* ══════════════════════════════════
+     MAP SCREEN — Desktop
+  ══════════════════════════════════ */
+  #map-screen { flex-direction: row; overflow: hidden; }
+
+  #map-grid-wrap {
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+  #map-grid {
+    display: grid;
+    grid-template-columns: repeat(8, 46px);
+    grid-template-rows: repeat(8, 46px);
+    gap: 3px;
+    flex-shrink: 0;
+  }
+  .tile {
+    width: 46px; height: 46px;
+    border: 1px solid #0e1e14;
+    border-radius: 4px;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    font-size: 17px;
+    cursor: pointer;
+    position: relative;
+    transition: border-color .1s;
+    user-select: none;
+  }
+  .tile:hover { border-color: #2a6a40; }
+  .tile.player { border-color: var(--accent) !important; box-shadow: 0 0 10px var(--accent); }
+  .tile .tile-label { font-size: 7px; color: #3a5a40; margin-top: 1px; font-family: 'VT323', monospace; line-height: 1.1; text-align: center; }
+  .tile .tile-name  { font-size: 6px; color: #2a7a50; font-family: 'VT323', monospace; line-height: 1.1; text-align: center; }
+  .tile .player-dot { font-size: 18px; position: absolute; }
+
+  #dpad {
+    display: grid;
+    grid-template: 36px 36px 36px / 36px 36px 36px;
+    gap: 3px;
+    flex-shrink: 0;
+  }
+  .dpad-btn {
+    background: #0d1a10;
+    border: 1px solid var(--border);
+    color: var(--accent);
+    font-size: 20px;
+    cursor: pointer;
+    border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    transition: background .1s;
+  }
+  .dpad-btn:hover { background: #1a3a20; }
+
+  #map-side {
+    flex: 1;
+    border-left: 2px solid var(--border);
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    overflow-y: auto;
+  }
+
+  /* floating dpad hidden on desktop */
+  #dpad-float { display: none; }
+
+  /* ══════════════════════════════════
+     MAP SCREEN — Mobile only
+  ══════════════════════════════════ */
+  @media (max-width: 600px) {
+    #map-screen { flex-direction: column; overflow-y: auto; }
+
+    #map-grid-wrap {
+      padding: 6px 8px 4px;
+      gap: 4px;
+    }
+    #map-grid {
+      grid-template-columns: repeat(8, 38px);
+      grid-template-rows: repeat(8, 38px);
+      gap: 2px;
+    }
+    .tile {
+      width: 38px; height: 38px;
+      font-size: 14px;
+      border-radius: 3px;
+    }
+    .tile .tile-label { font-size: 6px; line-height: 1; }
+    .tile .tile-name  { font-size: 5px; line-height: 1; }
+    .tile .player-dot { font-size: 14px; }
+
+    /* Floating dpad on mobile */
+    #dpad {
+      position: fixed;
+      bottom: 18px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 50;
+      background: #060e08cc;
+      border-radius: 8px;
+      padding: 4px;
+      backdrop-filter: blur(4px);
+    }
+
+    #dpad-float {
+      position: fixed;
+      bottom: 18px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 50;
+      background: #060e08cc;
+      border-radius: 8px;
+      padding: 4px;
+      backdrop-filter: blur(4px);
+      display: grid;
+      grid-template: 36px 36px 36px / 36px 36px 36px;
+      gap: 3px;
+    }
+
+    #map-side {
+      border-left: none;
+      border-top: 1px solid var(--border);
+      padding: 8px 14px 100px; /* bottom padding so content clears the floating dpad */
+    }
+  }
+  .panel-box {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 12px;
+  }
+  .panel-label { font-size: 13px; color: var(--dim); letter-spacing: 2px; margin-bottom: 6px; }
+
+  /* Party cards in sidebar */
+  .party-card {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 7px;
+  }
+  .party-card .mon-emoji { font-size: 22px; }
+  .party-card .mon-info { flex: 1; }
+  .party-card .mon-name { font-size: 17px; }
+  .mini-bar-wrap { height: 5px; background: #111; border-radius: 3px; overflow: hidden; margin-top: 2px; }
+  .mini-bar { height: 100%; border-radius: 3px; transition: width .3s; }
+
+  /* ══════════════════════════════════
+     BATTLE SCREEN
+  ══════════════════════════════════ */
+  #battle-screen {
+    flex-direction: column;
+    background: radial-gradient(ellipse at 50% 0%, #0a1a2a 0%, #050810 70%);
+  }
+
+  #battle-top {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  #enemy-side {
+    width: 42%;
+    border-right: 1px solid #0e2030;
+    padding: 12px;
+    overflow-y: auto;
+  }
+  #player-side {
+    width: 58%;
+    display: flex;
+    flex-direction: column;
+    padding: 12px;
+    gap: 8px;
+    overflow-y: auto;
+  }
+  #player-cards {
+    flex-shrink: 0;
+  }
+  #action-panel {
+    flex-shrink: 0;
+    background: #060c14;
+    border: 1px solid #0e2a3a;
+    border-radius: 8px;
+    padding: 10px;
+    position: sticky;
+    bottom: 0;
+  }
+  #action-label { font-size: 14px; color: var(--dim); margin-bottom: 8px; letter-spacing: 1px; }
+  #moves-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+  .move-btn {
+    background: #0a1820;
+    border: 1px solid #1a3a5a;
+    color: var(--text);
+    font-family: 'VT323', monospace;
+    font-size: 17px;
+    padding: 8px;
+    border-radius: 5px;
+    cursor: pointer;
+    text-align: left;
+    transition: border-color .15s, background .15s;
+  }
+  .move-btn:hover { background: #0e2030; border-color: var(--accent3); }
+  .move-btn .move-sub { font-size: 13px; color: #3a6a7a; margin-top: 1px; }
+  .move-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+  #battle-result {
+    text-align: center;
+    padding: 12px;
+  }
+  #result-title { font-family: 'Press Start 2P', monospace; font-size: 16px; margin-bottom: 8px; }
+  .result-btn {
+    background: #0a2a1a;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    font-family: 'VT323', monospace;
+    font-size: 20px;
+    padding: 6px 24px;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  .flee-btn {
+    background: transparent;
+    border: 1px solid #2a3a2a;
+    color: var(--dim);
+    font-family: 'VT323', monospace;
+    font-size: 17px;
+    padding: 3px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-left: auto;
+  }
+  .flee-btn:hover { border-color: var(--danger); color: var(--danger); }
+
+  /* Battle log */
+  #battle-log {
+    height: 88px;
+    background: #040810;
+    border-top: 1px solid #0e1a28;
+    padding: 6px 12px;
+    overflow-y: auto;
+    flex-shrink: 0;
+  }
+  .log-line { font-size: 16px; color: #4a7a6a; margin-bottom: 1px; }
+  .log-line.latest { color: #a8d8b8; }
+
+  /* ══════════════════════════════════
+     PARTY SCREEN
+  ══════════════════════════════════ */
+  #party-screen { flex-direction: row; }
+
+  #party-list {
+    width: 200px;
+    border-right: 2px solid var(--border);
+    padding: 10px;
+    overflow-y: auto;
+  }
+  .plist-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px;
+    margin-bottom: 6px;
+    cursor: pointer;
+    transition: border-color .15s;
+  }
+  .plist-card:hover, .plist-card.selected { border-color: var(--accent); }
+  .plist-card .bench-tag { font-size: 12px; color: var(--dim); }
+
+  #party-detail {
+    flex: 1;
+    padding: 16px;
+    overflow-y: auto;
+  }
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 0; }
+  .stat-box {
+    background: #0a1510;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 10px;
+  }
+  .stat-box .sl { font-size: 13px; color: var(--dim); }
+  .stat-box .sv { font-size: 24px; }
+  .moves-list { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; }
+  .move-card {
+    background: #0a1510;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 7px;
+    font-size: 16px;
+  }
+  .move-card .mc-sub { font-size: 13px; color: var(--dim); }
+  .action-row { display: flex; gap: 8px; margin-top: 12px; }
+  .small-btn {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'VT323', monospace;
+    font-size: 17px;
+    padding: 5px 14px;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  .small-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .small-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+  /* Inventory tab */
+  #inv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; padding: 4px 0; }
+  .inv-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px;
+    font-size: 16px;
+  }
+  .inv-card .ic-emoji { font-size: 28px; margin-bottom: 4px; }
+  .inv-card .ic-name { font-size: 17px; }
+  .inv-card .ic-eff { font-size: 13px; color: var(--dim); margin-top: 2px; }
+  .inv-card .ic-rare { font-size: 12px; margin-top: 3px; text-transform: uppercase; letter-spacing: 1px; }
+  .rare-rare { color: var(--gold); border-color: var(--gold) !important; }
+  .rare-uncommon { color: var(--shadow-el); border-color: var(--shadow-el) !important; }
+
+  /* ══════════════════════════════════
+     TOWN / SHOP SCREEN
+  ══════════════════════════════════ */
+  #town-screen { flex-direction: column; }
+  #ranch-screen { flex-direction: column; }
+  #town-header, #ranch-header {
+    background: #060a0e;
+    border-bottom: 2px solid var(--border);
+    padding: 8px 16px 6px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+  }
+  #town-title { font-family: 'Press Start 2P', monospace; font-size: 10px; color: var(--accent2); }
+  #ranch-title { font-family: 'Press Start 2P', monospace; font-size: 10px; color: var(--accent2); }
+  #town-tab-bar, #ranch-tab-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    width: 100%;
+  }
+  #town-body, #ranch-body { flex: 1; padding: 16px; overflow-y: auto; }
+  .town-section { max-width: 640px; }
+  .shop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; margin-top: 10px; }
+  .shop-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .shop-card .sc-emoji { font-size: 30px; margin-bottom: 6px; }
+  .shop-card .sc-name { font-size: 18px; }
+  .shop-card .sc-desc { font-size: 13px; color: var(--dim); margin: 4px 0 8px; }
+  .buy-btn {
+    background: #0a1a08;
+    border: 1px solid #2a5a20;
+    color: var(--accent);
+    font-family: 'VT323', monospace;
+    font-size: 17px;
+    padding: 4px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  .buy-btn:hover { background: #152a10; }
+  .buy-btn:disabled { opacity: .4; cursor: not-allowed; }
+  .heal-big-btn {
+    background: #0a2a14;
+    border: 2px solid var(--accent);
+    color: var(--accent);
+    font-family: 'VT323', monospace;
+    font-size: 22px;
+    padding: 8px 24px;
+    border-radius: 6px;
+    cursor: pointer;
+    margin-top: 10px;
+  }
+  .heal-big-btn:hover { background: #142a1a; }
+  .heal-big-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+  /* ══════════════════════════════════
+     ENCOUNTER OVERLAY
+  ══════════════════════════════════ */
+  #encounter-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: #000000bb;
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+  }
+  #encounter-overlay.show { display: flex; }
+  #encounter-box {
+    background: var(--panel);
+    border: 2px solid var(--accent);
+    border-radius: 12px;
+    padding: 28px 30px;
+    min-width: 260px;
+    text-align: center;
+    box-shadow: 0 0 40px var(--accent) + '44';
+  }
+  #enc-emoji { font-size: 60px; margin-bottom: 8px; }
+  #enc-name { font-size: 24px; color: var(--accent); }
+  #enc-sub { font-size: 16px; color: var(--dim); margin: 4px 0 14px; }
+  #enc-desc { font-size: 15px; color: var(--text); margin-bottom: 16px; }
+  .enc-btns { display: flex; gap: 12px; justify-content: center; }
+  .enc-accept {
+    background: #0a2a10;
+    border: 2px solid var(--accent);
+    color: var(--accent);
+    font-family: 'VT323', monospace;
+    font-size: 20px;
+    padding: 7px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .enc-decline {
+    background: transparent;
+    border: 1px solid #2a2a2a;
+    color: #5a5a5a;
+    font-family: 'VT323', monospace;
+    font-size: 20px;
+    padding: 7px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+
+  /* Toast */
+  #toast {
+    position: fixed;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--panel);
+    border: 1px solid var(--accent);
+    color: var(--text);
+    font-size: 17px;
+    padding: 8px 16px;
+    border-radius: 12px;
+    z-index: 400;
+    transition: transform .3s ease, opacity .2s ease;
+    pointer-events: none;
+    max-width: 86vw;
+    text-align: center;
+    line-height: 1.4;
+  }
+  #toast.show {
+    transform: translateX(-50%) translateY(0);
+    pointer-events: auto;
+  }
+  #toast[style*="display: none"] { transition: none; }
+
+  #stable-notifs {
+    position: fixed;
+    bottom: 80px;
+    right: 16px;
+    z-index: 500;
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 6px;
+    pointer-events: none;
+  }
+  .stable-notif {
+    background: #0a1a10;
+    border: 1px solid #2aff7a44;
+    color: #a8e8b8;
+    font-family: 'VT323', monospace;
+    font-size: 16px;
+    padding: 7px 14px;
+    border-radius: 8px;
+    opacity: 0;
+    transform: translateX(20px);
+    transition: opacity .3s, transform .3s;
+    max-width: 260px;
+  }
+  .stable-notif.show { opacity: 1; transform: translateX(0); }
+  .stable-notif.fade { opacity: 0; transform: translateX(20px); }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* ══════════════════════════════════
+     MOBILE — narrow screens (< 600px)
+     Reflows all side-by-side layouts
+     to vertical stacks so nothing is
+     clipped by the Claude chat chrome.
+  ══════════════════════════════════ */
+  @media (max-width: 600px) {
+
+    /* Shrink title bar */
+    #titlebar { height: auto; padding: 5px 8px; flex-wrap: wrap; gap: 5px; }
+    #titlebar .logo { font-size: 7px; width: 100%; }
+    .nav-btn { font-size: 14px; padding: 3px 8px; }
+    #titlebar .gold-disp { font-size: 16px; margin-left: auto; }
+
+    /* ── MAP: stack grid above sidebar ── */
+    #map-screen { flex-direction: column; overflow-y: auto; }
+
+    #map-grid-wrap { padding: 8px; gap: 6px; }
+    #map-grid {
+      grid-template-columns: repeat(6, 1fr);
+      grid-template-rows: repeat(6, 1fr);
+      width: min(96vw, 340px);
+      height: min(96vw, 340px);
+      gap: 2px;
+    }
+    .tile {
+      width: 100%; height: 100%;
+      font-size: 16px;
+    }
+    .tile .tile-label { display: none; }
+
+    #dpad { grid-template: 42px 42px 42px / 42px 42px 42px; gap: 4px; }
+    .dpad-btn { font-size: 22px; border-radius: 6px; }
+
+    #map-side {
+      border-left: none;
+      border-top: 2px solid var(--border);
+      padding: 10px;
+      gap: 8px;
+      flex-shrink: 0;
+      overflow-y: visible;
+    }
+
+    /* ── BATTLE: stack enemies above player ── */
+    #battle-top { flex-direction: column; overflow-y: auto; }
+
+    #enemy-side {
+      width: 100%;
+      border-right: none;
+      border-bottom: 1px solid #0e2030;
+      padding: 8px;
+      overflow-y: visible;
+    }
+    #player-side {
+      width: 100%;
+      padding: 8px;
+      overflow-y: visible;
+    }
+
+    #moves-grid { grid-template-columns: 1fr 1fr; gap: 5px; }
+    .move-btn { font-size: 15px; padding: 7px 5px; }
+
+    #battle-log { height: 72px; font-size: 14px; }
+
+    /* ── PARTY: stack list above detail ── */
+    #party-screen { flex-direction: column; }
+    #party-list {
+      width: 100%;
+      border-right: none;
+      border-bottom: 2px solid var(--border);
+      padding: 8px;
+      display: flex;
+      flex-direction: row;
+      flex-wrap: wrap;
+      gap: 5px;
+      overflow-x: auto;
+      overflow-y: visible;
+      flex-shrink: 0;
+    }
+    .plist-card { min-width: 100px; margin-bottom: 0; }
+    #party-detail { padding: 10px; overflow-y: auto; }
+    .stat-grid { grid-template-columns: 1fr 1fr 1fr; }
+
+    /* ── TOWN: reduce padding ── */
+    #town-body, #ranch-body { padding: 10px; }
+    .shop-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+    .shop-card { padding: 8px; }
+    .shop-card .sc-emoji { font-size: 22px; }
+
+    /* ── ENCOUNTER: fit on small screens ── */
+    #encounter-box { padding: 18px 16px; min-width: 220px; max-width: 90vw; }
+    #enc-emoji { font-size: 44px; }
+    #enc-name { font-size: 20px; }
+
+    /* ── TOAST ── */
+    #toast { font-size: 15px; padding: 6px 16px; bottom: 10px; }
+  }
+
+  /* ── SAFE AREA: pad bottom of all scrollable containers
+        so content isn't hidden behind the Claude chat bar ── */
+  @media (max-width: 600px) {
+    /* Extra bottom breathing room on every scrollable surface */
+    #map-side,
+    #town-body,
+    #ranch-body,
+    #party-detail,
+    #battle-log,
+    #party-list,
+    #inv-grid,
+    #battle-top,
+    #map-screen {
+      padding-bottom: max(120px, env(safe-area-inset-bottom, 120px));
+    }
+    /* The encounter box should sit above the chat bar too */
+    #encounter-overlay { align-items: flex-start; padding-top: 60px; padding-bottom: 140px; }
+    /* Toast clears the chat bar */
+    #toast { bottom: 130px; }
+  }
+
+  /* Mid-range: tablets / narrow desktop */
+  @media (min-width: 601px) and (max-width: 860px) {
+    #map-grid {
+      grid-template-columns: repeat(6, 48px);
+      grid-template-rows: repeat(6, 48px);
+    }
+    .tile { width: 48px; height: 48px; font-size: 18px; }
+    #enemy-side { width: 45%; }
+    #player-side { width: 55%; }
+  }
+</style>
+</head>
+<body>
+
+<!-- TITLE BAR -->
+<div id="titlebar">
+  <div class="logo">🐉 REALM OF ECHOES</div>
+  <button class="nav-btn active" onclick="showScreen('map')">🗺 MAP</button>
+  <button class="nav-btn" onclick="showScreen('party')">📋 PARTY</button>
+  <button class="nav-btn" onclick="showInventory()">📦 ITEMS</button>
+  <div class="gold-disp" id="gold-disp">💰 100g</div>
+</div>
+
+<!-- MAP SCREEN -->
+<div class="screen active" id="map-screen">
+  <div id="map-grid-wrap">
+    <div id="map-grid"></div>
+    <div id="dpad">
+      <div></div>
+      <button type="button" class="dpad-btn" onclick="dpadMove(-1,0)">▲</button>
+      <div></div>
+      <button type="button" class="dpad-btn" onclick="dpadMove(0,-1)">◀</button>
+      <div></div>
+      <button type="button" class="dpad-btn" onclick="dpadMove(0,1)">▶</button>
+      <div></div>
+      <button type="button" class="dpad-btn" onclick="dpadMove(1,0)">▼</button>
+      <div></div>
+    </div>
+  </div>
+  <div id="map-side">
+    <div class="panel-box" style="padding:8px 10px">
+      <div id="loc-name" style="font-size:19px;color:var(--accent)"></div>
+      <div id="loc-info" style="font-size:13px;color:var(--dim);margin-top:2px"></div>
+      <div id="clock-display" style="font-size:14px;color:var(--gold);margin-top:2px"></div>
+    </div>
+    <div style="display:flex;gap:6px">
+      <button id="search-btn" onclick="searchArea()" style="flex:1;font-family:'VT323',monospace;font-size:18px;padding:8px 0;border-radius:6px;cursor:pointer;background:#0a1a10;border:2px solid var(--accent);color:var(--accent)">
+        🔍 SEARCH
+      </button>
+      <button id="town-nav-btn" onclick="enterLocation()" style="flex:1;font-family:'VT323',monospace;font-size:18px;padding:8px 0;border-radius:6px;cursor:pointer;background:#0a1208;border:2px solid #4a8a5a;color:#88cc88;display:none">
+        🏙 ENTER
+      </button>
+    </div>
+    <div style="display:flex;gap:6px">
+      <button id="last-battle-btn" onclick="showLastBattleLog()" style="flex:1;font-family:'VT323',monospace;font-size:15px;padding:6px 0;border-radius:6px;cursor:pointer;background:#0a0a1a;border:2px solid #4a4a7a;color:#8888bb">
+        📜 LAST BATTLE
+      </button>
+      <button id="build-ranch-btn" onclick="tryBuildRanch()" style="flex:1;font-family:'VT323',monospace;font-size:15px;padding:6px 0;border-radius:6px;cursor:pointer;background:#0a1a08;border:2px solid #4a7a4a;color:#88bb88;display:none">
+        🏡 BUILD RANCH
+      </button>
+    </div>
+    <div class="panel-box" style="padding:8px 10px">
+      <div class="panel-label">PARTY</div>
+      <div id="side-party"></div>
+    </div>
+  </div>
+</div>
+
+<!-- BATTLE SCREEN -->
+<div class="screen" id="battle-screen">
+  <div id="battle-header" style="background:#040810;border-bottom:1px solid #0e1a28;padding:6px 14px;display:flex;align-items:center;gap:10px;flex-shrink:0;">
+    <span style="font-family:'Press Start 2P',monospace;font-size:9px;color:var(--accent3)">⚔ BATTLE</span>
+    <button class="flee-btn" onclick="fleeBattle()">FLEE</button>
+  </div>
+  <div id="battle-top">
+    <div id="enemy-side">
+      <div class="battle-label">ENEMIES</div>
+      <div id="enemy-cards"></div>
+    </div>
+    <div id="player-side">
+      <div>
+        <div class="battle-label">YOUR TEAM</div>
+        <div id="player-cards"></div>
+      </div>
+      <div id="action-panel">
+        <div id="action-label">Choose action...</div>
+        <div id="moves-grid"></div>
+        <div id="battle-result" style="display:none"></div>
+      </div>
+    </div>
+  </div>
+  <div id="battle-log"></div>
+</div>
+
+<!-- PARTY SCREEN -->
+<div class="screen" id="party-screen">
+  <div id="party-list">
+    <div class="panel-label" style="padding:4px 0 8px">PARTY (Active)</div>
+    <div id="plist-active"></div>
+    <div class="panel-label" style="padding:10px 0 6px;color:#333">BENCH</div>
+    <div id="plist-bench"></div>
+    <div style="border-top:1px solid var(--border);margin-top:10px;padding-top:10px;">
+      <div class="panel-label" style="margin-bottom:4px">INVENTORY</div>
+      <button class="small-btn" onclick="showInvDetail()">View Items</button>
+    </div>
+  </div>
+  <div id="party-detail">
+    <div id="pdetail-content" style="color:var(--dim);font-size:16px;margin-top:30px">← Select a monster</div>
+    <div id="inv-detail" style="display:none">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+        <button class="small-btn" onclick="hideInvDetail()">← Back</button>
+        <div style="font-size:20px;color:var(--accent)">INVENTORY</div>
+      </div>
+      <div id="inv-grid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- TOWN/SHOP SCREEN -->
+<div class="screen" id="town-screen">
+  <div id="town-header">
+    <div style="display:flex;align-items:center;justify-content:space-between;width:100%;margin-bottom:4px">
+      <div id="town-title">🏘 TOWN</div>
+      <button class="nav-btn" onclick="showScreen('map')">← LEAVE</button>
+    </div>
+    <div id="town-tab-bar">
+      <button class="nav-btn" id="th-tab1" onclick="switchTownTab(0)">🏨 INN</button>
+      <button class="nav-btn" id="th-tab2" onclick="switchTownTab(1)">🪤 TRAPPER</button>
+      <button class="nav-btn" id="th-tab3" onclick="switchTownTab(2)">🏪 MERCHANT</button>
+      <button class="nav-btn" id="th-tab5" onclick="switchTownTab(3)">⚙️ WORKSHOP</button>
+    </div>
+  </div>
+  <div id="town-body">
+    <div id="town-tab-heal" class="town-section"></div>
+    <div id="town-tab-recruit" class="town-section" style="display:none"></div>
+    <div id="town-tab-sell" class="town-section" style="display:none"></div>
+    <div id="town-tab-tech" class="town-section" style="display:none"></div>
+  </div>
+</div>
+
+<!-- RANCH SCREEN -->
+<div class="screen" id="ranch-screen">
+  <div id="ranch-header">
+    <div style="display:flex;align-items:center;justify-content:space-between;width:100%;margin-bottom:4px">
+      <div id="ranch-title">🏡 RANCH</div>
+      <button class="nav-btn" onclick="showScreen('map')">← LEAVE</button>
+    </div>
+    <div id="ranch-tab-bar">
+      <button class="nav-btn" id="rh-tab1" onclick="switchRanchTab(0)">🏨 INN</button>
+      <button class="nav-btn" id="rh-tab2" onclick="switchRanchTab(1)">⚙️ WORKSHOP</button>
+      <button class="nav-btn" id="rh-tab3" onclick="switchRanchTab(2)">🐴 STABLE</button>
+    </div>
+  </div>
+  <div id="ranch-body">
+    <div id="ranch-tab-heal" class="town-section"></div>
+    <div id="ranch-tab-tech" class="town-section" style="display:none"></div>
+    <div id="ranch-tab-stable" class="town-section" style="display:none"></div>
+  </div>
+</div>
+
+<!-- RUINS SCREEN -->
+<div class="screen" id="ruins-screen">
+  <div id="ranch-header">
+    <div style="display:flex;align-items:center;justify-content:space-between;width:100%;margin-bottom:4px">
+      <div id="ruins-title" style="font-size:20px;color:#c084fc">⛩ RUINS</div>
+      <button class="nav-btn" onclick="showScreen('map')">← LEAVE</button>
+    </div>
+    <div id="ruins-tab-bar"></div>
+  </div>
+  <div id="ruins-body">
+    <div id="ruins-tab-main"  class="town-section"></div>
+    <div id="ruins-tab-inn"   class="town-section" style="display:none"></div>
+    <div id="ruins-tab-tech"  class="town-section" style="display:none"></div>
+    <div id="ruins-tab-stable" class="town-section" style="display:none"></div>
+    <div id="ruins-tab-relic" class="town-section" style="display:none"></div>
+    <div id="ruins-tab-shrine" class="town-section" style="display:none"></div>
+  </div>
+</div>
+
+<!-- ENCOUNTER OVERLAY -->
+<div id="encounter-overlay">
+  <div id="encounter-box">
+    <div id="enc-emoji"></div>
+    <div id="enc-name"></div>
+    <div id="enc-sub"></div>
+    <div id="enc-desc"></div>
+    <div class="enc-btns">
+      <button class="enc-accept" id="enc-accept-btn" onclick="acceptEncounter()"></button>
+      <button class="enc-decline" id="enc-decline-btn" onclick="declineEncounter()">Skip</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+<!-- STABLE NOTIFICATIONS -->
+<div id="stable-notifs"></div>
+
+<script>
+// ════════════════════════════════════════════════════════
+// DATA
+// ════════════════════════════════════════════════════════
+const ELEMENTS = {
+  fire:      { color: "#ff6b2a", glow: "#ff9a6a", icon: "🔥", bg: "#1a0800" },
+  water:     { color: "#2ab8ff", glow: "#80d8ff", icon: "💧", bg: "#001828" },
+  earth:     { color: "#7ec850", glow: "#b0e87a", icon: "🌿", bg: "#0a1800" },
+  lightning: { color: "#ffd84a", glow: "#ffe89a", icon: "⚡", bg: "#1a1600" },
+  shadow:    { color: "#c084fc", glow: "#e0b4ff", icon: "🌑", bg: "#100018" },
+};
+
+const MONSTER_TYPES = [
+  // ── Recruitable ──
+  { id:"emberfox",    name:"Emberfox",    element:"fire",      emoji:"🦊", desc:"A cunning fox wreathed in flames.",           base:{ hp:80,  atk:70, def:45, spd:80, int:60 } },
+  { id:"tideworm",    name:"Tideworm",    element:"water",     emoji:"🐛", desc:"A serpentine worm of ocean currents.",        base:{ hp:95,  atk:55, def:70, spd:55, int:75 } },
+  { id:"thornback",   name:"Thornback",   element:"earth",     emoji:"🦔", desc:"A spiny beast armored in living bark.",       base:{ hp:110, atk:60, def:90, spd:35, int:50 } },
+  { id:"voltmole",    name:"Voltmole",    element:"lightning", emoji:"🐭", desc:"A mole that generates electricity.",          base:{ hp:70,  atk:85, def:40, spd:75, int:65 } },
+  { id:"wraithcat",   name:"Wraithcat",   element:"shadow",    emoji:"🐱", desc:"A feline that slips between worlds.",         base:{ hp:75,  atk:75, def:55, spd:90, int:80 } },
+  { id:"duskwolf",    name:"Duskwolf",    element:"shadow",    emoji:"🐺", desc:"A wolf that hunts in absolute darkness.",     base:{ hp:90,  atk:80, def:50, spd:70, int:65 } },
+  { id:"lavabug",     name:"Lavabug",     element:"fire",      emoji:"🪲", desc:"A beetle with a molten shell.",               base:{ hp:85,  atk:65, def:80, spd:45, int:40 } },
+  { id:"coralfish",   name:"Coralfish",   element:"water",     emoji:"🐡", desc:"A fish draped in living coral.",              base:{ hp:90,  atk:60, def:65, spd:70, int:85 } },
+  { id:"mushroomog",  name:"Mushroomog",  element:"earth",     emoji:"🍄", desc:"A frog sprouting mushroom caps.",             base:{ hp:100, atk:50, def:80, spd:50, int:90 } },
+  { id:"stormhawk",   name:"Stormhawk",   element:"lightning", emoji:"🦅", desc:"A hawk that rides thunderheads.",             base:{ hp:70,  atk:90, def:45, spd:95, int:70 } },
+  // ── Wild only ──
+  { id:"cindertoad",  name:"Cindertoad",  element:"fire",      emoji:"🐸", desc:"A bloated toad that belches molten gas.",     base:{ hp:100, atk:60, def:70, spd:30, int:55 }, wildOnly:true },
+  { id:"mistleech",   name:"Mistleech",   element:"water",     emoji:"🪱", desc:"A pale leech that drains moisture from the air.", base:{ hp:85, atk:55, def:60, spd:65, int:90 }, wildOnly:true },
+  { id:"bouldercrab", name:"Bouldercrab", element:"earth",     emoji:"🦀", desc:"A crab whose shell is fused solid rock.",     base:{ hp:120, atk:65, def:100, spd:20, int:40 }, wildOnly:true },
+  { id:"gloomowl",    name:"Gloomowl",    element:"shadow",    emoji:"🦉", desc:"A silent owl whose feathers absorb light.",   base:{ hp:70,  atk:80, def:50, spd:95, int:85 }, wildOnly:true },
+  { id:"tempesteel",  name:"Tempesteel",  element:"lightning", emoji:"🐉", desc:"A small iron-scaled drake crackling with charge.", base:{ hp:80, atk:95, def:55, spd:80, int:60 }, wildOnly:true },
+  { id:"ashviper",    name:"Ashviper",    element:"fire",      emoji:"🐍", desc:"A pale serpent that leaves scorched trails.", base:{ hp:75,  atk:85, def:40, spd:95, int:50 }, wildOnly:true },
+  { id:"coralcrab",   name:"Coralcrab",   element:"water",     emoji:"🦞", desc:"A lobster encrusted with living coral spires.", base:{ hp:110, atk:70, def:85, spd:40, int:70 }, wildOnly:true },
+  { id:"mossback",    name:"Mossback",    element:"earth",     emoji:"🐢", desc:"A tortoise whose shell is thick with ancient moss.", base:{ hp:130, atk:55, def:95, spd:25, int:45 }, wildOnly:true },
+  { id:"nightshriek", name:"Nightshriek", element:"shadow",    emoji:"🦇", desc:"A bat that emits a wail that disorients prey.", base:{ hp:65, atk:75, def:45, spd:100, int:80 }, wildOnly:true },
+  { id:"thunderpike", name:"Thunderpike", element:"lightning", emoji:"🐟", desc:"A freshwater fish that discharges on contact.", base:{ hp:90, atk:80, def:50, spd:70, int:75 }, wildOnly:true },
+  { id:"glitchspawn",  name:"Glitchspawn",  element:"shadow",    emoji:"👾", desc:"An anomalous entity flickering between planes of existence.", base:{ hp:60, atk:70, def:40, spd:85, int:95 }, wildOnly:true },
+  // ── Ruin Bosses ──
+  { id:"stonewarden",  name:"Stonewarden",  element:"earth",     emoji:"🗿", desc:"An ancient sentinel of living rock, guardian of forgotten ruins.", base:{ hp:180, atk:90, def:120, spd:30, int:60 }, wildOnly:true, isBoss:true },
+  { id:"voidlord",     name:"Voidlord",     element:"shadow",    emoji:"👁", desc:"A formless terror born from accumulated shadow, sovereign of ruined places.", base:{ hp:150, atk:110, def:70, spd:90, int:130 }, wildOnly:true, isBoss:true },
+  { id:"stormwyrm",    name:"Stormwyrm",    element:"lightning", emoji:"🌪", desc:"An ancient lightning wyrm coiled beneath the swamps since the first storm.", base:{ hp:170, atk:130, def:80, spd:120, int:100 }, wildOnly:true, isBoss:true },
+];
+
+// Growth tiers per monster: S=18%, A=13%, B=8%, C=4% of base stat per level-up
+// Each monster has exactly 1S, 1A, 2B, 1C across [hp, atk, def, spd, int]
+const GROWTH_TIERS = {
+  emberfox:    { hp:'B', atk:'A', def:'C', spd:'S', int:'B' }, // Fast striker
+  tideworm:    { hp:'B', atk:'C', def:'A', spd:'B', int:'S' }, // Support tank
+  thornback:   { hp:'A', atk:'B', def:'S', spd:'C', int:'B' }, // Pure tank
+  voltmole:    { hp:'B', atk:'S', def:'C', spd:'A', int:'B' }, // Fast attacker
+  wraithcat:   { hp:'C', atk:'B', def:'B', spd:'S', int:'A' }, // Swift mystic
+  duskwolf:    { hp:'A', atk:'S', def:'C', spd:'B', int:'B' }, // Relentless hunter
+  lavabug:     { hp:'B', atk:'A', def:'S', spd:'B', int:'C' }, // Armored attacker
+  coralfish:   { hp:'B', atk:'C', def:'B', spd:'A', int:'S' }, // Mystic speedster
+  mushroomog:  { hp:'A', atk:'C', def:'B', spd:'B', int:'S' }, // Mystic tank
+  stormhawk:   { hp:'C', atk:'A', def:'B', spd:'S', int:'B' }, // Ultimate speedster
+  cindertoad:  { hp:'S', atk:'B', def:'A', spd:'C', int:'B' }, // Bloated tank
+  mistleech:   { hp:'B', atk:'B', def:'C', spd:'A', int:'S' }, // Mystic drainer
+  bouldercrab: { hp:'B', atk:'A', def:'S', spd:'C', int:'B' }, // Fortress tank
+  gloomowl:    { hp:'C', atk:'B', def:'A', spd:'S', int:'B' }, // Silent swift
+  tempesteel:  { hp:'B', atk:'S', def:'B', spd:'A', int:'C' }, // Power striker
+  ashviper:    { hp:'C', atk:'S', def:'B', spd:'A', int:'B' }, // Glass-cannon striker
+  coralcrab:   { hp:'B', atk:'B', def:'S', spd:'C', int:'A' }, // Armored brawler
+  mossback:    { hp:'S', atk:'B', def:'B', spd:'C', int:'A' }, // Ancient guardian
+  nightshriek: { hp:'B', atk:'B', def:'C', spd:'S', int:'A' }, // Swift mystic bat
+  thunderpike: { hp:'B', atk:'S', def:'C', spd:'B', int:'A' }, // Smart attacker
+  glitchspawn:  { hp:'C', atk:'B', def:'B', spd:'A', int:'S' }, // Erratic mystic
+  stonewarden:  { hp:'S', atk:'B', def:'A', spd:'C', int:'B' }, // Immovable fortress
+  voidlord:     { hp:'B', atk:'A', def:'C', spd:'B', int:'S' }, // Void sovereign
+  stormwyrm:    { hp:'B', atk:'S', def:'C', spd:'A', int:'B' }, // Storm predator
+};
+const TIER_PCT = { S: 0.18, A: 0.13, B: 0.08, C: 0.04 };
+
+function calcLevelUpGains(typeId, baseStats) {
+  const tiers = GROWTH_TIERS[typeId] || { hp:'B', atk:'B', def:'B', spd:'B', int:'B' };
+  return {
+    hp:  Math.max(1, Math.round(baseStats.hp  * TIER_PCT[tiers.hp])),
+    atk: Math.max(1, Math.round(baseStats.atk * TIER_PCT[tiers.atk])),
+    def: Math.max(1, Math.round(baseStats.def * TIER_PCT[tiers.def])),
+    spd: Math.max(1, Math.round(baseStats.spd * TIER_PCT[tiers.spd])),
+    int: Math.max(1, Math.round(baseStats.int * TIER_PCT[tiers.int])),
+  };
+}
+
+// Unique flavoured physical attacks per monster type — 0 MP, no elemental advantage
+const PHYSICAL_BY_MONSTER = {
+  emberfox:    { name:"Scratch",       power:28, type:"physical", mp:0 },
+  tideworm:    { name:"Tail Slap",     power:28, type:"physical", mp:0 },
+  thornback:   { name:"Spine Jab",     power:28, type:"physical", mp:0 },
+  voltmole:    { name:"Burrow Slam",   power:28, type:"physical", mp:0 },
+  wraithcat:   { name:"Rake",          power:28, type:"physical", mp:0 },
+  duskwolf:    { name:"Bite",          power:28, type:"physical", mp:0 },
+  lavabug:     { name:"Shell Bash",    power:28, type:"physical", mp:0 },
+  coralfish:   { name:"Fin Slap",      power:28, type:"physical", mp:0 },
+  mushroomog:  { name:"Headbutt",      power:28, type:"physical", mp:0 },
+  stormhawk:   { name:"Talon Strike",  power:28, type:"physical", mp:0 },
+  cindertoad:  { name:"Mud Lunge",     power:28, type:"physical", mp:0 },
+  mistleech:   { name:"Latch",         power:28, type:"physical", mp:0 },
+  bouldercrab: { name:"Claw Crush",    power:28, type:"physical", mp:0 },
+  gloomowl:    { name:"Talon Swipe",   power:28, type:"physical", mp:0 },
+  tempesteel:  { name:"Iron Headbutt", power:28, type:"physical", mp:0 },
+  ashviper:    { name:"Fang Strike",   power:28, type:"physical", mp:0 },
+  coralcrab:   { name:"Pincer Snap",   power:28, type:"physical", mp:0 },
+  mossback:    { name:"Shell Ram",     power:28, type:"physical", mp:0 },
+  nightshriek: { name:"Wing Buffet",   power:28, type:"physical", mp:0 },
+  thunderpike: { name:"Ram Charge",    power:28, type:"physical", mp:0 },
+  glitchspawn: { name:"Phase Strike",  power:28, type:"physical", mp:0 },
+  stonewarden: { name:"Bedrock Smash", power:32, type:"physical", mp:0 },
+  voidlord:    { name:"Void Grasp",    power:32, type:"physical", mp:0 },
+  stormwyrm:   { name:"Storm Lunge",   power:32, type:"physical", mp:0 },
+};
+
+const MOVES_BY_EL = {
+  fire:      [{ name:"Flame Burst",  power:60, type:"attack", mp:12 },{ name:"Inferno",      power:90, type:"attack", mp:22 },{ name:"Heat Shield",  power:0, type:"buff", mp:10, effect:"def" }],
+  water:     [{ name:"Tidal Wave",   power:65, type:"attack", mp:14 },{ name:"Aqua Vortex",  power:85, type:"attack", mp:20 },{ name:"Bubble Shield",power:0, type:"buff", mp:10, effect:"def" }],
+  earth:     [{ name:"Quake Slam",   power:65, type:"attack", mp:14 },{ name:"Landslide",    power:85, type:"attack", mp:21 },{ name:"Stone Skin",   power:0, type:"buff", mp:10, effect:"def" }],
+  lightning: [{ name:"Thunder Fang", power:65, type:"attack", mp:13 },{ name:"Volt Surge",   power:90, type:"attack", mp:22 },{ name:"Static Aura",  power:0, type:"buff", mp:10, effect:"spd" }],
+  shadow:    [{ name:"Void Strike",  power:70, type:"attack", mp:15 },{ name:"Dark Ruin",    power:90, type:"attack", mp:22 },{ name:"Fade",         power:0, type:"buff", mp:10, effect:"spd" }],
+};
+
+const EL_ADVANTAGE = { fire:"earth", water:"fire", earth:"water", lightning:"shadow", shadow:"lightning" };
+
+// One plant per element. All heal 30% MaxHP; matching element = full heal.
+// Breakdown yields 1–3 of the plant's elemental resource.
+const PLANT_TYPES = [
+  { id:"emberpetal",  name:"Emberpetal",  emoji:"🏵️", element:"fire",      rarity:"uncommon", effect:"Restores 25% MaxHP & MP (fire: 35%)",      value:30 },
+  { id:"tideleaf",    name:"Tideleaf",    emoji:"🌊", element:"water",     rarity:"uncommon", effect:"Restores 25% MaxHP & MP (water: 35%)",     value:30 },
+  { id:"ironvine",    name:"Ironvine",    emoji:"🌱", element:"earth",     rarity:"uncommon", effect:"Restores 25% MaxHP & MP (earth: 35%)",     value:30 },
+  { id:"stormspore",  name:"Stormspore",  emoji:"🌾", element:"lightning", rarity:"uncommon", effect:"Restores 25% MaxHP & MP (lightning: 35%)", value:30 },
+  { id:"voidcap",     name:"Voidcap",     emoji:"🪻", element:"shadow",    rarity:"uncommon", effect:"Restores 25% MaxHP & MP (shadow: 35%)",    value:30 },
+];
+
+// Breakdown a plant → 1–3 of its elemental resource
+const PLANT_BREAKDOWN = { fire:"fire", water:"water", earth:"earth", lightning:"lightning", shadow:"shadow" };
+
+// One mineral per element. Not consumable — Break only, yields 1–3 of the mineral's elemental resource.
+const MINERAL_TYPES = [
+  { id:"cinder_shard",    name:"Cinder Shard",    emoji:"🔶", element:"fire",      rarity:"common",   effect:"Displays fire power. Break to extract resources.", value:20 },
+  { id:"seafoam_crystal", name:"Seafoam Crystal",  emoji:"🔷", element:"water",     rarity:"common",   effect:"Hums with tidal energy. Break to extract resources.", value:20 },
+  { id:"lodeshard",       name:"Lodeshard",        emoji:"⬛", element:"lightning", rarity:"common",   effect:"Crackles with static charge. Break to extract resources.", value:20 },
+  { id:"petrified_root",  name:"Petrified Root",   emoji:"🟫", element:"earth",     rarity:"common",   effect:"Dense with ancient earth. Break to extract resources.", value:20 },
+  { id:"voidglass",       name:"Voidglass",        emoji:"🔮", element:"shadow",    rarity:"uncommon", effect:"Absorbs all light. Break to extract resources.", value:35 },
+];
+
+// Breakdown a mineral → 1–3 of its elemental resource (same pattern as plants)
+
+// Minerals are no longer craftable — CRAFT_RECIPES is now empty
+const CRAFT_RECIPES = [];
+
+const ELEMENTAL_RESOURCES = {
+  fire:      { name:"Ember Core",    emoji:"🔥", desc:"A smouldering core shed by fire monsters." },
+  water:     { name:"Tide Pearl",    emoji:"🫧", desc:"An iridescent pearl formed in water creatures." },
+  earth:     { name:"Root Shard",    emoji:"🪨", desc:"A dense fragment of living earth." },
+  lightning: { name:"Spark Crystal", emoji:"⚡", desc:"A crackling crystal humming with charge." },
+  shadow:    { name:"Void Sliver",   emoji:"🌑", desc:"A dark sliver that absorbs light." },
+};
+
+
+// ════════════════════════════════════════════════════════
+// TECH ITEMS
+// ════════════════════════════════════════════════════════
+const TECH_ITEMS = [
+  {
+    id: "ember_core_tech",
+    name: "Ember Vest",
+    emoji: "🦺",
+    element: "fire",
+    desc: "A vest woven from fire cores. Channels heat into raw striking power.",
+    rarity: "uncommon",
+    value: 50,
+    type: "tech",
+    statBoost: 10,
+    statStat: "atk",
+    slots: [null, null, null],
+  },
+  {
+    id: "tide_circuit",
+    name: "Tide Cap",
+    emoji: "🧢",
+    element: "water",
+    desc: "A cap infused with tidal energy that hardens the body against impact.",
+    rarity: "uncommon",
+    value: 50,
+    type: "tech",
+    statBoost: 10,
+    statStat: "def",
+    slots: [null, null, null],
+  },
+  {
+    id: "void_frame",
+    name: "Void Glasses",
+    emoji: "🕶️",
+    element: "shadow",
+    desc: "Glasses threaded with void slivers. Grants uncanny swiftness.",
+    rarity: "rare",
+    value: 80,
+    type: "tech",
+    statBoost: 10,
+    statStat: "spd",
+    slots: [null, null, null],
+  },
+  {
+    id: "storm_plating",
+    name: "Storm Goggles",
+    emoji: "🥽",
+    element: "lightning",
+    desc: "Goggles charged with storm crystals. Sharpens mental focus.",
+    rarity: "uncommon",
+    value: 50,
+    type: "tech",
+    statBoost: 10,
+    statStat: "int",
+    slots: [null, null, null],
+  },
+  {
+    id: "root_chassis",
+    name: "Root Helmet",
+    emoji: "🪖",
+    element: "earth",
+    desc: "A helmet grown from petrified roots. Greatly expands vitality.",
+    rarity: "uncommon",
+    value: 50,
+    type: "tech",
+    statBoost: 10,
+    statStat: "maxHp",
+    slots: [null, null, null],
+  },
+  {
+    id: "wardens_crest",
+    name: "Warden's Crest",
+    emoji: "🏺",
+    element: "earth",
+    desc: "A relic crown worn by the Stonewarden. Radiates immovable fortitude.",
+    rarity: "rare",
+    value: 200,
+    type: "tech",
+    statBoost: 20,
+    statStat: "def",
+    slots: [null, null, null],
+    bossReward: true,
+  },
+  {
+    id: "void_crown",
+    name: "Void Crown",
+    emoji: "👑",
+    element: "shadow",
+    desc: "A crown of crystallised void-energy. Greatly amplifies arcane power.",
+    rarity: "rare",
+    value: 300,
+    type: "tech",
+    statBoost: 25,
+    statStat: "int",
+    slots: [null, null, null],
+    bossReward: true,
+  },
+  {
+    id: "storm_crown",
+    name: "Storm Crown",
+    emoji: "⚡",
+    element: "lightning",
+    desc: "A crackling diadem forged from the Stormwyrm's own coils. Pure speed.",
+    rarity: "rare",
+    value: 400,
+    type: "tech",
+    statBoost: 30,
+    statStat: "spd",
+    slots: [null, null, null],
+    bossReward: true,
+  },
+];
+
+const TECH_RECIPES = [
+  { itemId: "ember_core_tech",  cost: { fire: 4, earth: 2 },       mineral: "cinder_shard",    mineralQty: 4, label: "Fire Forging" },
+  { itemId: "tide_circuit",     cost: { water: 4, lightning: 2 },   mineral: "seafoam_crystal", mineralQty: 4, label: "Tidal Engineering" },
+  { itemId: "void_frame",       cost: { shadow: 5, water: 2 },      mineral: "voidglass",       mineralQty: 4, label: "Void Craft" },
+  { itemId: "storm_plating",    cost: { lightning: 4, fire: 2 },    mineral: "lodeshard",       mineralQty: 4, label: "Storm Forging" },
+  { itemId: "root_chassis",     cost: { earth: 4, shadow: 2 },      mineral: "petrified_root",  mineralQty: 4, label: "Earth Shaping" },
+];
+
+// ════════════════════════════════════════════════════════
+// COMPONENTS — slot into Tech power slots
+// ════════════════════════════════════════════════════════
+const COMPONENT_TYPES = [
+  { id:"torque_core",    name:"Torque Core",    emoji:"⚙️",  type:"component", rarity:"common",   value:40,  effect:"+8 ATK",           stats:{ atk:8 } },
+  { id:"iron_fastener",  name:"Iron Fastener",  emoji:"🔩",  type:"component", rarity:"common",   value:40,  effect:"+8 DEF",           stats:{ def:8 } },
+  { id:"charge_cell",    name:"Charge Cell",    emoji:"🔋",  type:"component", rarity:"common",   value:35,  effect:"+20 Max MP",       stats:{ maxMp:20 } },
+  { id:"flux_bulb",      name:"Flux Bulb",      emoji:"💡",  type:"component", rarity:"common",   value:40,  effect:"+8 INT",           stats:{ int:8 } },
+  { id:"pulse_timer",    name:"Pulse Timer",    emoji:"⌚",  type:"component", rarity:"common",   value:40,  effect:"+8 SPD",           stats:{ spd:8 } },
+  { id:"drift_orbiter",  name:"Drift Orbiter",  emoji:"🛰",  type:"component", rarity:"common",   value:45,  effect:"+15 Max HP",       stats:{ maxHp:15 } },
+  { id:"power_tap",      name:"Power Tap",      emoji:"🔌",  type:"component", rarity:"uncommon", value:70,  effect:"+6 ATK, +6 INT",   stats:{ atk:6, int:6 } },
+  { id:"echo_relay",     name:"Echo Relay",     emoji:"📱",  type:"component", rarity:"uncommon", value:70,  effect:"+6 SPD, +6 INT",   stats:{ spd:6, int:6 } },
+  { id:"ward_eye",       name:"Ward Eye",       emoji:"🧿",  type:"component", rarity:"uncommon", value:70,  effect:"+6 DEF, +6 SPD",   stats:{ def:6, spd:6 } },
+  { id:"signal_dish",    name:"Signal Dish",    emoji:"📡",  type:"component", rarity:"rare",     value:100, effect:"+10% Hit Chance",  stats:{ hitBonus:10 } },
+];
+
+const COMPONENT_RECIPES = [
+  { itemId:"torque_core",   cost:{ fire:3, earth:1 },       mineral:"petrified_root",  mineralQty:1, label:"Mechanical Forging" },
+  { itemId:"iron_fastener", cost:{ earth:4 },                mineral:"cinder_shard",    mineralQty:1, label:"Iron Working" },
+  { itemId:"charge_cell",   cost:{ lightning:4 },            mineral:"lodeshard",       mineralQty:1, label:"Charge Assembly" },
+  { itemId:"flux_bulb",     cost:{ water:4 },                mineral:"seafoam_crystal", mineralQty:1, label:"Flux Tuning" },
+  { itemId:"pulse_timer",   cost:{ shadow:4 },               mineral:"voidglass",       mineralQty:1, label:"Void Timing" },
+  { itemId:"drift_orbiter", cost:{ earth:3, shadow:1 },      mineral:"petrified_root",  mineralQty:1, label:"Orbit Assembly" },
+  { itemId:"power_tap",     cost:{ fire:3, lightning:3 },    mineral:"lodeshard",       mineralQty:1, label:"Power Splicing" },
+  { itemId:"echo_relay",    cost:{ shadow:3, water:3 },      mineral:"voidglass",       mineralQty:1, label:"Echo Weaving" },
+  { itemId:"ward_eye",      cost:{ earth:3, fire:3 },        mineral:"cinder_shard",    mineralQty:1, label:"Ward Crafting" },
+  { itemId:"signal_dish",   cost:{ lightning:4, water:4 },   mineral:"seafoam_crystal", mineralQty:1, label:"Signal Tuning" },
+];
+
+// ════════════════════════════════════════════════════════
+// RUINS
+// ════════════════════════════════════════════════════════
+// Ruins positions: 0,0 (Tier 1), 2,7 (Tier 2), 7,2 (Tier 3)
+const RUINS_DATA = {
+  "0,0": {
+    tier: 1,
+    bossId: "stonewarden",
+    bossLevel: 15,
+    bossName: "Stonewarden",
+    bossEmoji: "🗿",
+    rewardGold: 800,
+    rewardItem: "wardens_crest",
+    rewardRecruit: "bouldercrab",
+    flavorText: "Ancient stone sentinel. Undefeated for centuries.",
+    rebuildSteps: [
+      { label:"Clear Rubble",          goldCost:500,  resourceCost:{ earth:5 },             mineralCost:0,  done:false },
+      { label:"Lay Foundation",        goldCost:800,  resourceCost:{ earth:3, fire:2 },      mineralCost:5,  done:false },
+      { label:"Complete Construction", goldCost:1200, resourceCost:{ earth:5, lightning:5 }, mineralCost:10, done:false },
+    ],
+  },
+  "2,7": {
+    tier: 2,
+    bossId: "voidlord",
+    bossLevel: 25,
+    bossName: "Voidlord",
+    bossEmoji: "👁",
+    rewardGold: 2000,
+    rewardItem: "void_crown",
+    rewardRecruit: "glitchspawn",
+    flavorText: "Sovereign of the void. Consumes light itself.",
+    rebuildSteps: [
+      { label:"Clear Rubble",          goldCost:800,  resourceCost:{ shadow:5 },              mineralCost:0,  done:false },
+      { label:"Lay Foundation",        goldCost:1200, resourceCost:{ shadow:4, water:4 },      mineralCost:8,  done:false },
+      { label:"Complete Construction", goldCost:2000, resourceCost:{ shadow:6, lightning:6 },  mineralCost:15, done:false },
+    ],
+  },
+  "7,2": {
+    tier: 3,
+    bossId: "stormwyrm",
+    bossLevel: 35,
+    bossName: "Stormwyrm",
+    bossEmoji: "🌪",
+    rewardGold: 4000,
+    rewardItem: "storm_crown",
+    rewardRecruit: "thunderpike",
+    flavorText: "An ancient wyrm of pure lightning, coiled beneath the swamp since the first storm.",
+    rebuildSteps: [
+      { label:"Clear Rubble",          goldCost:1500, resourceCost:{ lightning:6 },                  mineralCost:0,  done:false },
+      { label:"Lay Foundation",        goldCost:2000, resourceCost:{ lightning:5, earth:5 },          mineralCost:12, done:false },
+      { label:"Complete Construction", goldCost:3000, resourceCost:{ lightning:8, shadow:4, fire:4 }, mineralCost:20, done:false },
+    ],
+  },
+};
+
+const RUIN_FACILITIES = [
+  { id:"inn",     label:"🏨 Inn",            desc:"Rest and heal your party.",                goldCost:400,  resourceCost:{} },
+  { id:"workshop",label:"⚙️ Workshop",        desc:"Craft Tech gear and Components.",          goldCost:600,  resourceCost:{ fire:3, earth:3 } },
+  { id:"stable",  label:"🐴 Stable",          desc:"Leave monsters to recover and produce.",   goldCost:400,  resourceCost:{ earth:4 } },
+  { id:"relic",   label:"🏺 Relic Shop",      desc:"Rare items not sold elsewhere.",           goldCost:800,  resourceCost:{ shadow:4, earth:4 } },
+  { id:"shrine",  label:"🔮 Monster Shrine",  desc:"Recruit wild-only monsters.",              goldCost:1000, resourceCost:{ shadow:5, lightning:5 } },
+];
+
+// Relic shop stock per ruin tier (items available once relic facility built)
+const RELIC_STOCK = {
+  1: [
+    { ...COMPONENT_TYPES.find(c=>c.id==='signal_dish') },
+    { ...COMPONENT_TYPES.find(c=>c.id==='ward_eye') },
+    { ...COMPONENT_TYPES.find(c=>c.id==='drift_orbiter') },
+    { ...TECH_ITEMS.find(t=>t.id==='wardens_crest') },
+  ],
+  2: [
+    { ...COMPONENT_TYPES.find(c=>c.id==='signal_dish') },
+    { ...COMPONENT_TYPES.find(c=>c.id==='echo_relay') },
+    { ...COMPONENT_TYPES.find(c=>c.id==='power_tap') },
+    { ...TECH_ITEMS.find(t=>t.id==='void_crown') },
+    { ...TECH_ITEMS.find(t=>t.id==='wardens_crest') },
+  ],
+  3: [
+    { ...COMPONENT_TYPES.find(c=>c.id==='signal_dish') },
+    { ...COMPONENT_TYPES.find(c=>c.id==='echo_relay') },
+    { ...COMPONENT_TYPES.find(c=>c.id==='power_tap') },
+    { ...COMPONENT_TYPES.find(c=>c.id==='ward_eye') },
+    { ...TECH_ITEMS.find(t=>t.id==='storm_crown') },
+    { ...TECH_ITEMS.find(t=>t.id==='void_crown') },
+    { ...TECH_ITEMS.find(t=>t.id==='wardens_crest') },
+  ],
+};
+
+const SHRINE_MONSTERS = {
+  1: ["cindertoad","gloomowl","bouldercrab","mossback"],
+  2: ["tempesteel","ashviper","nightshriek","thunderpike","glitchspawn"],
+  3: ["tempesteel","ashviper","nightshriek","thunderpike","glitchspawn","cindertoad","gloomowl","bouldercrab","mossback"],
+};
+
+
+const MAP_TILES = [
+  ["ruins",  "forest", "forest",  "mountain","mountain","cave",  "cave",  "cave"  ],
+  ["forest", "forest", "forest",  "mountain","mountain","cave",  "cave",  "cave"  ],
+  ["forest", "forest", "town",    "road",    "road",    "road",  "cave",  "ruins" ],
+  ["plains", "forest", "road",    "plains",  "plains",  "road",  "cave",  "cave"  ],
+  ["plains", "plains", "road",    "plains",  "shop",    "road",  "road",  "beach" ],
+  ["swamp",  "plains", "road",    "road",    "road",    "road",  "beach", "beach" ],
+  ["swamp",  "swamp",  "swamp",   "road",    "beach",   "beach", "beach", "beach" ],
+  ["swamp",  "swamp",  "ruins",   "swamp",   "beach",   "beach", "beach", "beach" ],
+];
+
+const TILE_DATA = {
+  forest:   { emoji:"🌲", color:"#0a1a08", label:"Forest",    monsters:["emberfox","thornback","mushroomog","gloomowl","mossback"],            plants:true },
+  mountain: { emoji:"⛰",  color:"#1a1208", label:"Mountains", monsters:["duskwolf","stormhawk","voltmole","tempesteel","bouldercrab"],           minerals:true },
+  cave:     { emoji:"🕳",  color:"#0e0e0e", label:"Dark Cave", monsters:["wraithcat","lavabug","nightshriek","gloomowl","glitchspawn"],                        minerals:true },
+  town:     { emoji:"🏙",  color:"#1a1008", label:"Town",      safe:true, enter:"town" },
+  road:     { emoji:"·",   color:"#0e0e08", label:"Road",      monsters:["coralfish","emberfox","ashviper"] },
+  plains:   { emoji:"🌾",  color:"#101808", label:"Plains",    monsters:["voltmole","thornback","ashviper","cindertoad"],                        plants:true },
+  shop:     { emoji:"🏙",  color:"#1a1008", label:"Town",      safe:true, enter:"town" },
+  ruins:    { emoji:"⛩",  color:"#0e0e18", label:"Ruins",     safe:true, enter:"ruins", monsters:["wraithcat","mushroomog","nightshriek","tempesteel","glitchspawn"] },
+  swamp:    { emoji:"🌫",  color:"#080e08", label:"Swamp",     monsters:["tideworm","coralfish","cindertoad","mistleech","thunderpike"],          plants:true },
+  beach:    { emoji:"🏖",  color:"#100e00", label:"Beach",     monsters:["tideworm","coralfish","coralcrab","bouldercrab"],                      plants:true, minerals:true },
+  ranch:    { emoji:"🏡",  color:"#0e1a08", label:"Ranch",     safe:true, enter:"ranch" },
+};
+
+// ════════════════════════════════════════════════════════
+// TILE NAME GENERATOR
+// ════════════════════════════════════════════════════════
+const NAME_SYLLABLES = [
+  "Al","Ar","Ash","Bel","Bor","Cael","Cal","Cor","Dal","Dun",
+  "El","Em","Fal","Fen","Gar","Glen","Hal","Har","Il","Iron",
+  "Kel","Ker","Leth","Lor","Mar","Mel","Mor","Nal","Nor","Oak",
+  "Pol","Ran","Rel","Rin","Ros","Sal","Sil","Sol","Tal","Tar",
+  "Tel","Tor","Un","Val","Var","Vel","Wren","Xan","Yal","Zar"
+];
+const NAME_ENDINGS = [
+  "ath","bridge","brook","den","dor","eth","fall","ford","gate",
+  "haven","hill","holm","keep","kirn","moor","reach","rock",
+  "shire","spire","stead","stone","vale","ward","well","wood"
+];
+function generateTileName() {
+  const syl = NAME_SYLLABLES[Math.floor(Math.random()*NAME_SYLLABLES.length)];
+  const end = NAME_ENDINGS[Math.floor(Math.random()*NAME_ENDINGS.length)];
+  return syl + end;
+}
+
+// Generate names for all uniquely-named tiles at startup
+// namedTiles: { "r,c": "Name" }
+const NAMED_TILE_TYPES = new Set(["town","shop","ruins","ranch"]);
+const TILE_NAMES = {};
+for (let r=0; r<MAP_TILES.length; r++) {
+  for (let c=0; c<MAP_TILES[r].length; c++) {
+    if (NAMED_TILE_TYPES.has(MAP_TILES[r][c])) {
+      TILE_NAMES[`${r},${c}`] = generateTileName();
+    }
+  }
+}
+
+
+// Generate trapper special stock for each town tile at startup
+// 2 random non-safe adjacent tile monsters, level 3, one-time purchase per town
+function generateTrapperInventory() {
+  const inv = {};
+  const TOWN_TYPES = new Set(["town", "shop"]);
+  for (let r = 0; r < MAP_TILES.length; r++) {
+    for (let c = 0; c < MAP_TILES[r].length; c++) {
+      if (!TOWN_TYPES.has(MAP_TILES[r][c])) continue;
+      // Collect monsters from tiles within 2 steps (Manhattan distance)
+      const adjMonsters = [];
+      for (let dr = -2; dr <= 2; dr++) {
+        for (let dc = -2; dc <= 2; dc++) {
+          if (Math.abs(dr) + Math.abs(dc) > 2 || (dr === 0 && dc === 0)) continue;
+          const ar = r + dr, ac = c + dc;
+          if (ar < 0 || ar >= MAP_TILES.length || ac < 0 || ac >= MAP_TILES[0].length) continue;
+          const td = TILE_DATA[MAP_TILES[ar][ac]];
+          if (td && !td.safe && td.monsters) {
+            td.monsters.forEach(mId => {
+              const t = MONSTER_TYPES.find(x => x.id === mId);
+              if (t && !adjMonsters.find(x => x.id === mId)) adjMonsters.push(t);
+            });
+          }
+        }
+      }
+      // Shuffle and pick 2, excluding base shop monsters
+      const shopIds = new Set(MONSTER_TYPES.slice(0, SHOP_MONSTER_COUNT).map(m => m.id));
+      const eligible = adjMonsters.filter(m => !shopIds.has(m.id));
+      for (let i = eligible.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [eligible[i], eligible[j]] = [eligible[j], eligible[i]];
+      }
+      inv[`${r},${c}`] = eligible.slice(0, 2).map(t => ({ typeId: t.id, purchased: false }));
+    }
+  }
+  return inv;
+}
+
+
+let UID = 1;
+const uid = () => `m${UID++}`;
+
+function makeMonster(typeId, level=1) {
+  const t = MONSTER_TYPES.find(x => x.id===typeId) || MONSTER_TYPES[0];
+  const v = () => Math.floor(Math.random()*8)-4;
+  const sc = b => Math.floor(b + (level-1)*b*0.12 + v());
+  const mhp = sc(t.base.hp);
+  return {
+    uid:uid(), typeId:t.id, name:t.name, element:t.element, emoji:t.emoji,
+    level, xp:0, xpNeeded:level*100,
+    hp:mhp, maxHp:mhp, mp:50, maxMp:50,
+    atk:sc(t.base.atk), def:sc(t.base.def), spd:sc(t.base.spd), int:sc(t.base.int),
+    buffs:{}, moves:[PHYSICAL_BY_MONSTER[t.id], ...MOVES_BY_EL[t.element]],
+    equippedTech: null, techSlots: null, hitBonus: 0,
+  };
+}
+
+const SHOP_MONSTER_COUNT = 4; // MONSTER_TYPES.slice(0, SHOP_MONSTER_COUNT) are purchasable
+const _starterPool = MONSTER_TYPES.filter(m => !m.wildOnly);
+const _starterType = _starterPool[Math.floor(Math.random() * _starterPool.length)];
+
+const STATE = {
+  gold: 2000,
+  pos: { r:2, c:2 },
+  party: [makeMonster(_starterType.id, 2)],
+  bench: [],
+  inventory: [
+    {...PLANT_TYPES.find(p=>p.id==='emberpetal')},
+    {...PLANT_TYPES.find(p=>p.id==='ironvine')},
+    {...PLANT_TYPES.find(p=>p.id==='voidcap')},
+    {...TECH_ITEMS.find(t=>t.id==='ember_core_tech')},
+    {...TECH_ITEMS.find(t=>t.id==='storm_plating')},
+    {...COMPONENT_TYPES.find(c=>c.id==='torque_core')},
+    {...COMPONENT_TYPES.find(c=>c.id==='iron_fastener')},
+    {...COMPONENT_TYPES.find(c=>c.id==='charge_cell')},
+    {...COMPONENT_TYPES.find(c=>c.id==='flux_bulb')},
+    {...COMPONENT_TYPES.find(c=>c.id==='pulse_timer')},
+    {...COMPONENT_TYPES.find(c=>c.id==='signal_dish')},
+    {...COMPONENT_TYPES.find(c=>c.id==='drift_orbiter')},
+    {...COMPONENT_TYPES.find(c=>c.id==='ward_eye')},
+  ],
+  resources: { fire:0, water:0, earth:0, lightning:0, shadow:0 },
+  stables: {},      // keyed "r,c" → [monster, ...]
+  time: 0,
+  merchantStock: {},   // keyed by "r,c" — refreshed monthly per town
+  merchantView: 'buy', // 'sell' | 'buy'
+  lastBattleLog: [],   // persists after battle ends
+  lastBattleResult: null,
+  battleEnemies: [],
+  encounter: null,
+  selectedMonUID: null,
+  currentTownMode: "town",
+  ranch: null,  // null = not built; { r, c, tileId, name } when built
+  ruins: {},    // keyed "r,c" → { bossDefeated, rebuildStep(0-3), facilities:[], relicView:'buy' }
+  trapperInventory: {}, // populated below after fn definition
+};
+STATE.trapperInventory = generateTrapperInventory();
+
+// ════════════════════════════════════════════════════════
+// SCREEN ROUTING
+// ════════════════════════════════════════════════════════
+function showInventory() {
+  showScreen('party');
+  showInvDetail();
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id+'-screen').classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  if (id==='map') { renderMap(); renderMapSide(); updateTownBtn(); }
+  if (id==='party') { renderPartyList(); document.getElementById('party-list').style.display = ''; document.getElementById('pdetail-content').style.display='block'; document.getElementById('inv-detail').style.display='none'; }
+  if (id==='town') renderTown();
+  if (id==='ruins') renderRuins();
+  updateDpadVisibility();
+}
+
+// ════════════════════════════════════════════════════════
+// MAP
+// ════════════════════════════════════════════════════════
+function renderMap() {
+  const grid = document.getElementById('map-grid');
+  grid.innerHTML = '';
+  for (let r=0;r<MAP_TILES.length;r++) {
+    for (let c=0;c<MAP_TILES[r].length;c++) {
+      const tileId = MAP_TILES[r][c];
+      const td = TILE_DATA[tileId];
+      const isPlayer = r===STATE.pos.r && c===STATE.pos.c;
+      const adj = Math.abs(r-STATE.pos.r)+Math.abs(c-STATE.pos.c)===1;
+      const el = document.createElement('div');
+      el.className = 'tile' + (isPlayer?' player':'');
+      el.style.background = td.color;
+      // Ruins: tint based on state
+      if (tileId === 'ruins') {
+        const rs = STATE.ruins?.[`${r},${c}`];
+        if (rs?.rebuildStep >= 3) el.style.background = '#180e28';
+        else if (rs?.bossDefeated) el.style.background = '#0e1828';
+      }
+      const tileName = TILE_NAMES[`${r},${c}`];
+      el.innerHTML = isPlayer
+        ? `<span class="player-dot">🧑</span>`
+        : tileName
+          ? `<span>${td.emoji}</span><span class="tile-label">${td.label.slice(0,7)}</span><span class="tile-name">of ${tileName}</span>`
+          : `<span>${td.emoji}</span><span class="tile-label">${td.label.slice(0,7)}</span>`;
+      if (adj) el.onclick = () => tryMove(r-STATE.pos.r, c-STATE.pos.c);
+      grid.appendChild(el);
+    }
+  }
+}
+
+function renderMapSide() {
+  const td = TILE_DATA[MAP_TILES[STATE.pos.r][STATE.pos.c]];
+  const tileId = MAP_TILES[STATE.pos.r][STATE.pos.c];
+  const tileName = TILE_NAMES[`${STATE.pos.r},${STATE.pos.c}`];
+  document.getElementById('loc-name').textContent = td.emoji + ' ' + (tileName ? `${td.label} of ${tileName}` : td.label);
+  const infos = [];
+  if (td.monsters) infos.push('⚔ Monsters roam here');
+  if (td.plants) infos.push('🌿 Plants grow');
+  if (td.minerals) infos.push('⛏ Minerals found');
+  if (td.safe && tileId === 'ruins') {
+    const rs = STATE.ruins?.[`${STATE.pos.r},${STATE.pos.c}`];
+    const rd = RUINS_DATA[`${STATE.pos.r},${STATE.pos.c}`];
+    if (!rs?.bossDefeated) infos.push(`⚔ ${rd?.bossName || 'Boss'} lurks within`);
+    else if (rs.rebuildStep < 3) infos.push(`🔨 Rebuilding (${rs.rebuildStep}/3)`);
+    else infos.push(`🏛 Rebuilt · ${rs.facilities.length}/3 facilities`);
+  } else if (td.safe) {
+    infos.push('🕊 Safe area');
+  }
+  document.getElementById('loc-info').textContent = infos.join(' · ');
+
+  // Party
+  const sp = document.getElementById('side-party');
+  sp.innerHTML = '';
+  STATE.party.forEach(m => {
+    const el = ELEMENTS[m.element];
+    const hpPct = Math.max(0,(m.hp/m.maxHp)*100);
+    const mpPct = Math.max(0,(m.mp/m.maxMp)*100);
+    const col = hpPct<30?'#ff3a3a':hpPct<60?'#ffd84a':'#2aff7a';
+    sp.innerHTML += `<div class="party-card">
+      <span class="mon-emoji">${m.emoji}</span>
+      <div class="mon-info">
+        <div class="mon-name" style="color:${el.color}">${m.name} <span style="color:var(--dim);font-size:14px">Lv.${m.level}</span></div>
+        <div class="mini-bar-wrap"><div class="mini-bar" style="width:${hpPct}%;background:${col}"></div></div>
+        <div class="mini-bar-wrap" style="margin-top:2px"><div class="mini-bar" style="width:${mpPct}%;background:#60a5fa"></div></div>
+      </div>
+    </div>`;
+  });
+  updateGold();
+}
+
+function updateTownBtn() {
+  const {r, c} = STATE.pos;
+  const tileId = MAP_TILES[r][c];
+  const td = TILE_DATA[tileId];
+  const btn = document.getElementById('town-nav-btn');
+  const ranchBtn = document.getElementById('build-ranch-btn');
+
+  // Town/Ranch enter button
+  if (td.safe) {
+    btn.style.display = '';
+    if (tileId === 'ranch' || (STATE.ranch && STATE.ranch.r === r && STATE.ranch.c === c)) {
+      const rName = STATE.ranch ? STATE.ranch.name : 'RANCH';
+      btn.textContent = `🏡 ${rName}`;
+    } else if (tileId === 'ruins') {
+      const ruinsName = TILE_NAMES[`${r},${c}`] || 'RUINS';
+      const rs = STATE.ruins?.[`${r},${c}`];
+      const rd = RUINS_DATA[`${r},${c}`];
+      const label = rs?.bossDefeated ? (rs.rebuildStep >= 3 ? '🏛' : '🔨') : '⛩';
+      btn.textContent = `${label} ${ruinsName}`;
+    } else {
+      btn.textContent = '🏙 TOWN';
+    }
+    STATE.currentTownMode = td.enter || 'town';
+  } else {
+    btn.style.display = 'none';
+  }
+
+  // Build Ranch button — show only if: tile is not safe, no ranch built yet, and tile is ≥3 from all safe spots
+  if (!td.safe && !STATE.ranch) {
+    const canBuild = isValidRanchLocation(r, c);
+    ranchBtn.style.display = '';
+    ranchBtn.disabled = !canBuild || STATE.gold < 1000;
+    ranchBtn.style.opacity = (!canBuild || STATE.gold < 1000) ? '0.4' : '1';
+    ranchBtn.style.cursor = (!canBuild || STATE.gold < 1000) ? 'not-allowed' : 'pointer';
+    ranchBtn.textContent = STATE.gold < 1000 ? `🏡 BUILD RANCH (need 1000g)` : canBuild ? `🏡 BUILD RANCH · 1000g` : `🏡 TOO CLOSE TO SAFE ZONE`;
+  } else {
+    ranchBtn.style.display = 'none';
+  }
+
+  // Search button — disabled on safe tiles
+  const sb = document.getElementById('search-btn');
+  if (sb) {
+    if (td.safe) {
+      sb.disabled = true;
+      sb.style.opacity = '0.3';
+      sb.style.cursor = 'not-allowed';
+    } else {
+      sb.disabled = false;
+      sb.style.opacity = '1';
+      sb.style.cursor = 'pointer';
+    }
+  }
+}
+
+function isValidRanchLocation(r, c) {
+  // Must be ≥3 Manhattan distance from any safe tile
+  for (let tr = 0; tr < MAP_TILES.length; tr++) {
+    for (let tc = 0; tc < MAP_TILES[tr].length; tc++) {
+      const tileId = MAP_TILES[tr][tc];
+      if (TILE_DATA[tileId] && TILE_DATA[tileId].safe) {
+        const dist = Math.abs(tr - r) + Math.abs(tc - c);
+        if (dist < 3) return false;
+      }
+    }
+  }
+  return true;
+}
+
+function tryBuildRanch() {
+  const {r, c} = STATE.pos;
+  const tileId = MAP_TILES[r][c];
+  const td = TILE_DATA[tileId];
+  if (td.safe || STATE.ranch) return;
+  if (!isValidRanchLocation(r, c)) { toast('🏡 Too close to a safe area!'); return; }
+  if (STATE.gold < 1000) { toast('🏡 Need 1000g to build a Ranch!'); return; }
+
+  const name = generateTileName();
+  STATE.gold -= 1000;
+  STATE.ranch = { r, c, tileId, name };
+  // Convert tile on map to ranch
+  MAP_TILES[r][c] = 'ranch';
+  TILE_NAMES[`${r},${c}`] = name;
+  updateGold();
+  renderMap();
+  renderMapSide();
+  updateTownBtn();
+  toast(`🏡 Ranch "${name}" built!`);
+}
+
+function enterLocation() {
+  const tileId = MAP_TILES[STATE.pos.r][STATE.pos.c];
+  if (tileId === 'ranch') {
+    enterRanch();
+  } else if (tileId === 'ruins') {
+    enterRuins();
+  } else {
+    showScreen('town');
+    renderTown();
+  }
+}
+
+function searchArea() {
+  const td = TILE_DATA[MAP_TILES[STATE.pos.r][STATE.pos.c]];
+  if (td.safe) return;
+  advanceTime();
+  renderMapSide();
+  if (Math.random() < 0.90) {
+    triggerTileEvent();
+  } else {
+    toast('🔍 You search the area but find nothing.');
+  }
+}
+
+// ════════════════════════════════════════════════════════
+// RANCH
+// ════════════════════════════════════════════════════════
+let activeRanchTab = 0;
+
+function enterRanch() {
+  showScreen('ranch');
+  renderRanch();
+}
+
+function renderRanch() {
+  const name = STATE.ranch ? STATE.ranch.name : 'Ranch';
+  document.getElementById('ranch-title').textContent = `🏡 ${name}`;
+  renderRanchInnTab();
+  switchRanchTab(activeRanchTab);
+}
+
+function switchRanchTab(n) {
+  activeRanchTab = n;
+  document.getElementById('ranch-tab-heal').style.display   = n===0 ? 'block' : 'none';
+  document.getElementById('ranch-tab-tech').style.display   = n===1 ? 'block' : 'none';
+  document.getElementById('ranch-tab-stable').style.display = n===2 ? 'block' : 'none';
+  if (n===1) renderRanchTechTab();
+  if (n===2) renderRanchStableTab();
+}
+
+function renderInnTab(tabElemId, restFn) {
+  const INN_RATE = 2; // gold per monster per hour
+  const party = [...STATE.party, ...STATE.bench];
+  const durations = [6, 12, 24];
+
+  const monCards = party.map(m => {
+    const el = ELEMENTS[m.element];
+    const hpPct = Math.max(0, (m.hp / m.maxHp) * 100);
+    const mpPct = Math.max(0, (m.mp / m.maxMp) * 100);
+    const hpCol = hpPct < 30 ? '#ff3a3a' : hpPct < 60 ? '#ffd84a' : '#2aff7a';
+    const hpRegen = Math.max(1, Math.floor(m.def / 8));
+    const mpRegen = Math.max(1, Math.floor(m.int / 10));
+    const inParty = !!STATE.party.find(x => x.uid === m.uid);
+    return `<div class="shop-card" style="border-color:${el.color}44">
+      <div class="sc-emoji">${m.emoji}</div>
+      <div class="sc-name" style="color:${el.color}">${m.name}</div>
+      <div style="font-size:13px;color:var(--dim);margin-bottom:6px">Lv.${m.level} · ${inParty ? 'Party' : 'Bench'}</div>
+      <div style="font-size:12px;color:${hpCol};margin-bottom:2px">HP ${m.hp} / ${m.maxHp}</div>
+      <div class="bar-wrap" style="margin-bottom:4px"><div class="bar-fill" style="width:${hpPct}%;background:${hpCol}"></div></div>
+      <div style="font-size:12px;color:#60a5fa;margin-bottom:2px">MP ${m.mp} / ${m.maxMp}</div>
+      <div class="bar-wrap" style="margin-bottom:6px"><div class="bar-fill" style="width:${mpPct}%;background:#60a5fa"></div></div>
+      <div style="font-size:12px;color:var(--dim)">+${hpRegen} HP/hr · +${mpRegen} MP/hr</div>
+    </div>`;
+  }).join('');
+
+  const restBtns = durations.map(hrs => {
+    const totalCost = party.length * INN_RATE * hrs;
+    const canAfford = STATE.gold >= totalCost;
+    return `<button class="buy-btn" ${canAfford ? '' : 'disabled'}
+      onclick="${restFn}(${hrs})"
+      style="flex:1;border-color:${canAfford ? 'var(--accent)' : '#333'};color:${canAfford ? 'var(--accent)' : '#555'}">
+      ${hrs}h · ${totalCost}g
+    </button>`;
+  }).join('');
+
+  document.getElementById(tabElemId).innerHTML = `
+    <div style="font-size:18px;color:var(--dim);margin-bottom:4px">Rest to recover HP and MP.</div>
+    <div style="font-size:14px;color:var(--dim);margin-bottom:10px">🪙 ${INN_RATE}g · monster · hour · HP: DEF/8 · MP: INT/10</div>
+    <div style="display:flex;gap:8px;margin-bottom:16px">${restBtns}</div>
+    <div class="shop-grid">${monCards}</div>`;
+}
+
+function doInnRest(hours, afterFn) {
+  const INN_RATE = 2;
+  const party = [...STATE.party, ...STATE.bench];
+  const totalCost = party.length * INN_RATE * hours;
+  if (STATE.gold < totalCost) return;
+  STATE.gold -= totalCost;
+  const applyRest = (list) => list.map(m => ({
+    ...m,
+    hp: Math.min(m.maxHp, m.hp + Math.max(1, Math.floor(m.def / 8)) * hours),
+    mp: Math.min(m.maxMp, m.mp + Math.max(1, Math.floor(m.int / 10)) * hours),
+  }));
+  STATE.party = applyRest(STATE.party);
+  STATE.bench  = applyRest(STATE.bench);
+  for (let i = 0; i < hours; i++) advanceTime();
+  updateGold();
+  afterFn();
+  toast(`Rested ${hours}h · -${totalCost}g`);
+}
+
+function renderRanchInnTab() {
+  renderInnTab('ranch-tab-heal', 'ranchInnRest');
+}
+
+function ranchInnRest(hours) {
+  doInnRest(hours, renderRanch);
+}
+
+function renderRanchTechTab() {
+  renderWorkshopInto('ranch-tab-tech');
+}
+
+function renderRanchStableTab() {
+  renderStableTab('ranch-tab-stable');
+}
+
+function renderRuinsStableTab() {
+  renderStableTab('ruins-tab-stable');
+}
+
+function dpadMove(dr, dc) {
+  tryMove(dr, dc);
+  // Blur focused button so it doesn't capture subsequent key events
+  if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+  // Scroll map screen back to top so player sees the grid
+  const mapScreen = document.getElementById('map-screen');
+  if (mapScreen) mapScreen.scrollTop = 0;
+}
+
+function updateDpadVisibility() {
+  const dpad = document.getElementById('dpad-float');
+  if (!dpad) return;
+  const isMobile = window.innerWidth <= 600;
+  const mapActive = document.getElementById('map-screen')?.classList.contains('active');
+  dpad.style.display = (isMobile && mapActive) ? 'grid' : 'none';
+}
+
+function tryMove(dr, dc) {
+  const nr = STATE.pos.r+dr, nc = STATE.pos.c+dc;
+  if (nr<0||nr>=MAP_TILES.length||nc<0||nc>=MAP_TILES[0].length) return;
+  STATE.pos = {r:nr, c:nc};
+  advanceTime();
+  renderMap();
+  renderMapSide();
+  updateTownBtn();
+  triggerTileEvent();
+}
+
+document.addEventListener('keydown', e => {
+  const map = {'ArrowUp':[-1,0],'ArrowDown':[1,0],'ArrowLeft':[0,-1],'ArrowRight':[0,1]};
+  if (map[e.key] && document.getElementById('map-screen').classList.contains('active')
+      && e.target.tagName !== 'BUTTON') {
+    e.preventDefault();
+    tryMove(...map[e.key]);
+  }
+});
+
+function triggerTileEvent() {
+  const td = TILE_DATA[MAP_TILES[STATE.pos.r][STATE.pos.c]];
+  if (td.safe) return;
+  const roll = Math.random();
+  if (roll < 0.42 && td.monsters) {
+    const typeId = td.monsters[Math.floor(Math.random()*td.monsters.length)];
+    const t = MONSTER_TYPES.find(x=>x.id===typeId);
+    const avgLvl = Math.max(1, Math.round(STATE.party.reduce((s,m)=>s+m.level,0)/STATE.party.length));
+    const lvl = Math.max(1, avgLvl+Math.floor(Math.random()*3)-1);
+    const mon = makeMonster(typeId, lvl);
+    STATE.encounter = { type:'monster', data:mon };
+    showEncounter();
+  } else if (roll < 0.58 && td.plants) {
+    const plant = PLANT_TYPES[Math.floor(Math.random()*PLANT_TYPES.length)];
+    const qty = 1 + Math.floor(Math.random() * 5);
+    STATE.encounter = { type:'plant', data:plant, qty };
+    showEncounter();
+  } else if (roll < 0.72 && td.minerals) {
+    const mineral = MINERAL_TYPES[Math.floor(Math.random()*MINERAL_TYPES.length)];
+    const qty = 1 + Math.floor(Math.random() * 5);
+    STATE.encounter = { type:'mineral', data:mineral, qty };
+    showEncounter();
+  }
+}
+
+// ════════════════════════════════════════════════════════
+// ENCOUNTER
+// ════════════════════════════════════════════════════════
+function showEncounter() {
+  const enc = STATE.encounter;
+  const el = document.getElementById('encounter-overlay');
+  document.getElementById('enc-emoji').textContent = enc.data.emoji;
+  document.getElementById('enc-name').textContent = enc.data.name;
+  if (enc.type==='monster') {
+    const elem = ELEMENTS[enc.data.element];
+    document.getElementById('enc-sub').textContent = elem.icon+' '+enc.data.element+' · Lv.'+enc.data.level;
+    document.getElementById('enc-desc').textContent = 'A wild monster appeared!';
+    document.getElementById('enc-accept-btn').textContent = '⚔ Battle!';
+    document.getElementById('encounter-box').style.borderColor = elem.color;
+    document.getElementById('enc-decline-btn').textContent = '🏃 Flee';
+  } else {
+    const rareColor = enc.data.rarity==='rare'?'#ffd84a':enc.data.rarity==='uncommon'?'#c084fc':'#4a6a50';
+    document.getElementById('enc-sub').style.color = rareColor;
+    document.getElementById('enc-sub').textContent = enc.data.rarity+' · '+enc.data.effect;
+    const qty = enc.qty || 1;
+    document.getElementById('enc-desc').textContent = enc.type==='plant'
+      ? `You found ${qty > 1 ? qty+'× ' : 'a '}plant${qty > 1 ? 's' : ''}!`
+      : `You discovered ${qty > 1 ? qty+'× ' : 'a '}mineral${qty > 1 ? 's' : ''}!`;
+    document.getElementById('enc-accept-btn').textContent = `✅ Collect${qty > 1 ? ' (×'+qty+')' : ''}`;
+    document.getElementById('encounter-box').style.borderColor = enc.type==='plant'?'#2aff7a':'#ffd84a';
+    document.getElementById('enc-decline-btn').textContent = 'Skip';
+  }
+  el.classList.add('show');
+}
+
+function acceptEncounter() {
+  const enc = STATE.encounter;
+  document.getElementById('encounter-overlay').classList.remove('show');
+  STATE.encounter = null;
+  if (enc.type==='monster') {
+    // Build enemy team (1–2 monsters)
+    const avgLvl = Math.max(1, Math.round(STATE.party.reduce((s,m)=>s+m.level,0)/STATE.party.length));
+    const count = Math.random()<0.4 ? 2 : 1;
+    STATE.battleEnemies = [enc.data];
+    for (let i=1;i<count;i++) {
+      const t = MONSTER_TYPES[Math.floor(Math.random()*MONSTER_TYPES.length)];
+      STATE.battleEnemies.push(makeMonster(t.id, Math.max(1,avgLvl+Math.floor(Math.random()*2)-1)));
+    }
+    startBattle();
+  } else {
+    const qty = enc.qty || 1;
+    for (let i = 0; i < qty; i++) STATE.inventory.push({ ...enc.data });
+    toast(`Found ${qty > 1 ? qty+'× ' : ''}${enc.data.emoji} ${enc.data.name}!`);
+  }
+}
+
+function declineEncounter() {
+  const enc = STATE.encounter;
+  STATE.encounter = null;
+  document.getElementById('encounter-overlay').classList.remove('show');
+
+  if (enc && enc.type === 'monster') {
+    // Apply same flee logic as in-battle: each enemy 50% chance to hit a random party member
+    const enemies = [enc.data];
+    const fleeLog = [];
+    let hits = 0;
+    enemies.forEach(enemy => {
+      if (Math.random() < 0.5) {
+        const alive = STATE.party.filter(m => m.hp > 0);
+        if (alive.length === 0) return;
+        const target = alive[Math.floor(Math.random() * alive.length)];
+        const dmg = Math.max(1, Math.floor(enemy.atk * 0.6));
+        const tIdx = STATE.party.findIndex(m => m.uid === target.uid);
+        if (tIdx >= 0) {
+          STATE.party[tIdx] = { ...STATE.party[tIdx], hp: Math.max(0, STATE.party[tIdx].hp - dmg) };
+          fleeLog.push(`${enemy.emoji} ${enemy.name} hit ${target.emoji} ${target.name} for ${dmg}!`);
+          hits++;
+        }
+      }
+    });
+    STATE.lastBattleLog = [`🏃 Fled from ${enc.data.emoji} ${enc.data.name}!`, ...fleeLog];
+    STATE.lastBattleResult = 'defeat';
+    updateLastBattleBtn();
+    renderMapSide();
+    toast(hits > 0 ? `Fled! Took a hit while escaping!` : `Fled safely!`);
+  }
+}
+
+// ════════════════════════════════════════════════════════
+// BATTLE
+// ════════════════════════════════════════════════════════
+let battleState = null;
+
+function startBattle() {
+  battleState = {
+    pTeam: STATE.party.filter(m=>m.hp>0).map(m => {
+      const copy = {...m, buffs:{...m.buffs}};
+      return copy;
+    }),
+    eTeam: STATE.battleEnemies.map(m=>({...m, buffs:{}})),
+    phase: 'pick',
+    activeIdx: 0,
+    pendingMoves: [],
+    log: ['⚔ Battle begins!'],
+  };
+  battleState.activeIdx = battleState.pTeam.findIndex(m=>m.hp>0);
+  showScreen('battle');
+  renderBattle();
+}
+
+function renderBattle() {
+  const bs = battleState;
+  renderEnemyCards();
+  renderPlayerCards();
+  renderActionPanel();
+  renderBattleLog();
+}
+
+function renderEnemyCards() {
+  const bs = battleState;
+  const el_wrap = document.getElementById('enemy-cards');
+  el_wrap.innerHTML = '';
+  bs.eTeam.forEach((m,i) => {
+    const el = ELEMENTS[m.element];
+    const hpPct = Math.max(0,(m.hp/m.maxHp)*100);
+    const targetable = bs.phase==='target' && m.hp>0;
+    const buffTags = Object.entries(m.buffs||{}).filter(([,v])=>v>0)
+      .map(([stat,val]) => `<span style="background:#1a2a0a;border:1px solid #4a7a20;color:#a3e635;font-size:11px;padding:1px 5px;border-radius:3px;margin-right:3px">▲${stat.toUpperCase()}+${val}</span>`).join('');
+    el_wrap.innerHTML += `<div class="battle-card${targetable?' targetable':''}${m.hp<=0?' fainted':''}"
+      style="background:linear-gradient(135deg,${el.bg},#080c10);border-color:${el.color}"
+      ${targetable?`onclick="selectTarget(${i})"`:''}
+      id="ecard-${i}">
+      <div class="bc-header">
+        <span class="bc-emoji">${m.emoji}</span>
+        <div>
+          <div class="bc-name" style="color:${el.color}">${m.name}</div>
+          <div class="bc-sub">${el.icon} ${m.element} · Lv.${m.level}</div>
+        </div>
+        ${m.hp<=0?'<span style="margin-left:auto;color:#333;font-size:14px">FAINTED</span>':''}
+      </div>
+      ${buffTags ? `<div style="margin-bottom:4px">${buffTags}</div>` : ''}
+      ${m.hp>0?`<div class="stat-row"><span>HP</span><span style="color:#ff6b6b">${m.hp}/${m.maxHp}</span></div>
+      <div class="bar-wrap"><div class="bar-fill" style="width:${hpPct}%;background:#ff4a6a"></div></div>`:''}
+    </div>`;
+  });
+}
+
+function renderPlayerCards() {
+  const bs = battleState;
+  const pw = document.getElementById('player-cards');
+  pw.innerHTML = '';
+  bs.pTeam.forEach((m,i) => {
+    const el = ELEMENTS[m.element];
+    const hpPct = Math.max(0,(m.hp/m.maxHp)*100);
+    const mpPct = Math.max(0,(m.mp/m.maxMp)*100);
+    const isActive = i===bs.activeIdx && bs.phase==='pick' && m.hp>0;
+    const hpCol = hpPct<30?'#ff3a3a':hpPct<60?'#ffd84a':'#2aff7a';
+    // Effective stats = base + buffs
+    const effAtk = m.atk + (m.buffs?.atk||0);
+    const effDef = m.def + (m.buffs?.def||0);
+    const effSpd = m.spd + (m.buffs?.spd||0);
+    const statColor = (base, eff) => eff > base ? '#a3e635' : '#c8e8d0';
+    const buffTags = Object.entries(m.buffs||{}).filter(([,v])=>v>0)
+      .map(([stat,val]) => `<span style="background:#0a2a0a;border:1px solid #4a7a20;color:#a3e635;font-size:11px;padding:1px 5px;border-radius:3px;margin-right:3px">▲${stat.toUpperCase()}+${val}</span>`).join('');
+    pw.innerHTML += `<div class="battle-card${m.hp<=0?' fainted':''}${isActive?' active-mon':''}"
+      style="background:linear-gradient(135deg,${el.bg},#080c10);border-color:${isActive?el.glow:el.color}">
+      <div class="bc-header">
+        <span class="bc-emoji">${m.emoji}</span>
+        <div style="flex:1">
+          <div class="bc-name" style="color:${el.color}">${m.name} <span style="color:var(--dim);font-size:14px">Lv.${m.level}</span></div>
+          <div class="bc-sub">
+            <span style="color:${statColor(m.atk,effAtk)}">ATK:${effAtk}</span>
+            <span style="margin:0 3px">·</span>
+            <span style="color:${statColor(m.def,effDef)}">DEF:${effDef}</span>
+            <span style="margin:0 3px">·</span>
+            <span style="color:${statColor(m.spd,effSpd)}">SPD:${effSpd}</span>
+          </div>
+        </div>
+        ${m.hp<=0?'<span style="color:#333;font-size:14px">FAINTED</span>':''}
+      </div>
+      ${buffTags ? `<div style="margin-bottom:4px">${buffTags}</div>` : ''}
+      ${m.hp>0?`<div class="stat-row"><span style="font-size:14px">HP</span><span style="color:#2aff7a;font-size:14px">${m.hp}/${m.maxHp}</span></div>
+      <div class="bar-wrap"><div class="bar-fill" style="width:${hpPct}%;background:${hpCol}"></div></div>
+      <div class="stat-row"><span style="font-size:14px">MP</span><span style="color:#60a5fa;font-size:14px">${m.mp}/${m.maxMp}</span></div>
+      <div class="bar-wrap"><div class="bar-fill" style="width:${mpPct}%;background:#60a5fa"></div></div>`:''}
+    </div>`;
+  });
+}
+
+function renderActionPanel() {
+  const bs = battleState;
+  const ap = document.getElementById('action-panel');
+  const al = document.getElementById('action-label');
+  const mg = document.getElementById('moves-grid');
+  const br = document.getElementById('battle-result');
+  mg.style.display = 'grid';
+  br.style.display = 'none';
+
+  if (bs.phase==='result') {
+    mg.style.display = 'none';
+    br.style.display = 'block';
+    const win = bs.eTeam.every(m=>m.hp<=0);
+    const earned = win ? bs.eTeam.reduce((s,m)=>s+m.level*15,0) : 0;
+    const drops = win ? (bs.resourceDrops || {}) : {};
+    const dropHtml = Object.entries(drops).map(([el, qty]) =>
+      `<span style="margin-right:8px">${ELEMENTAL_RESOURCES[el].emoji} ${qty}x ${ELEMENTAL_RESOURCES[el].name}</span>`
+    ).join('');
+    br.innerHTML = `<div id="result-title" style="color:${win?'#2aff7a':'#ff3a3a'}">${win?'🏆 VICTORY!':'💀 DEFEAT'}</div>
+      ${win?`<div style="color:var(--gold);margin-bottom:6px">+${earned} gold</div>`:''}
+      ${dropHtml ? `<div style="font-size:15px;margin-bottom:10px;color:#c8e8d0">${dropHtml}</div>` : ''}
+      <button class="result-btn" onclick="endBattle(${win},${earned})" style="border-color:${win?'var(--accent)':'var(--danger)'}">Continue →</button>`;
+    return;
+  }
+
+  if (bs.phase==='target') {
+    al.innerHTML = '👆 Click an enemy to target!';
+    mg.innerHTML = '';
+    return;
+  }
+
+  const mon = bs.pTeam[bs.activeIdx];
+  if (!mon || mon.hp<=0) { al.innerHTML = '...'; mg.innerHTML=''; return; }
+  const el = ELEMENTS[mon.element];
+
+  // Turn order bar: show all alive party members, highlight active, grey out done
+  const aliveP = bs.pTeam.filter(m=>m.hp>0);
+  const doneUids = new Set(bs.pendingMoves.filter(p=>p.who==='player').map(p=>bs.pTeam[p.mIdx]?.uid));
+  const turnNum = doneUids.size + 1;
+  const turnTotal = aliveP.length;
+  const turnBar = aliveP.map(m => {
+    const mel = ELEMENTS[m.element];
+    const isDone = doneUids.has(m.uid);
+    const isAct = m.uid === mon.uid;
+    const bg = isDone ? '#111' : isAct ? mel.bg : '#0a0a0a';
+    const border = isDone ? '#222' : isAct ? mel.glow : '#333';
+    const opacity = isDone ? 0.4 : 1;
+    return `<div style="display:flex;flex-direction:column;align-items:center;gap:2px;padding:5px 8px;
+      border:2px solid ${border};border-radius:6px;background:${bg};opacity:${opacity};
+      min-width:44px;transition:all .2s">
+      <span style="font-size:18px">${m.emoji}</span>
+      <span style="font-size:11px;color:${isAct?mel.color:'#555'}">${isDone?'✓ done':isAct?'▶ now':'wait'}</span>
+    </div>`;
+  }).join('');
+
+  al.innerHTML = `
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">
+      ${turnBar}
+    </div>
+    <div style="color:${el.color};font-size:18px">${mon.emoji} ${mon.name} — pick a move <span style="color:var(--dim);font-size:14px">(${turnNum}/${turnTotal})</span></div>`;
+
+  mg.innerHTML = mon.moves.map((mv,i) => {
+    const isPhysical = mv.type === 'physical';
+    const canAfford = isPhysical || mon.mp >= mv.mp;
+    const mpLabel = isPhysical
+      ? `<span style="color:#aaa">⚔ Physical · Free · scales with Lv</span>`
+      : `${mv.type==='attack'?'PWR:'+mv.power:'BUFF'} · <span style="color:${canAfford?'#60a5fa':'#ff3a3a'}">MP:${mv.mp}</span>${!canAfford?' ✗':''}`;
+    return `
+    <button class="move-btn" onclick="selectMove(${i})" ${canAfford ? '' : 'disabled'}
+      style="border-color:${isPhysical ? '#888' : canAfford ? el.color+'44' : '#222'};opacity:${canAfford ? 1 : 0.4}">
+      <span style="color:${isPhysical ? '#ddd' : canAfford ? el.glow : '#555'}">${mv.name}</span>
+      <div class="move-sub">${mpLabel}</div>
+    </button>`;
+  }).join('');
+}
+
+function renderBattleLog() {
+  const bl = document.getElementById('battle-log');
+  bl.innerHTML = battleState.log.slice(-20).map((l,i,a) =>
+    `<div class="log-line${i===a.length-1?' latest':''}">${l}</div>`).join('');
+  bl.scrollTop = bl.scrollHeight;
+  // Remove 'latest' highlight after 1.2s so it doesn't persist
+  clearTimeout(renderBattleLog._fadeTimer);
+  renderBattleLog._fadeTimer = setTimeout(() => {
+    const latest = bl.querySelector('.log-line.latest');
+    if (latest) latest.classList.remove('latest');
+  }, 1200);
+}
+
+function addLog(msg) {
+  battleState.log.push(msg);
+  renderBattleLog();
+}
+
+function selectMove(moveIdx) {
+  const bs = battleState;
+  const mon = bs.pTeam[bs.activeIdx];
+  const move = mon.moves[moveIdx];
+
+  // Buff moves always self-target — skip the target phase
+  if (move.type === 'buff') {
+    bs.pendingMoves.push({ who:'player', mIdx:bs.activeIdx, move, tIdx:bs.activeIdx });
+    const nextP = bs.pTeam.findIndex((m,i) => m.hp>0 && !bs.pendingMoves.find(p=>p.who==='player'&&p.mIdx===i));
+    if (nextP === -1) {
+      bs.eTeam.forEach((m,i) => {
+        if (m.hp<=0) return;
+        const alivePIdxs = bs.pTeam.map((pm,pi)=>pm.hp>0?pi:-1).filter(x=>x>=0);
+        const mv = m.moves[Math.floor(Math.random()*m.moves.length)];
+        const ti = mv.type === 'buff' ? i : alivePIdxs[Math.floor(Math.random()*alivePIdxs.length)];
+        bs.pendingMoves.push({ who:'enemy', mIdx:i, move:mv, tIdx:ti });
+      });
+      bs.phase = 'resolving';
+      renderBattle();
+      setTimeout(executeTurn, 400);
+    } else {
+      bs.activeIdx = nextP;
+      bs.phase = 'pick';
+      renderBattle();
+    }
+    return;
+  }
+
+  bs.pendingMoves.push({ who:'player', mIdx:bs.activeIdx, move, tIdx:null });
+  bs.phase = 'target';
+  renderBattle();
+}
+
+function selectTarget(tIdx) {
+  const bs = battleState;
+  const last = bs.pendingMoves.slice().reverse().findIndex(p=>p.who==='player'&&p.tIdx===null);
+  const realIdx = bs.pendingMoves.length - 1 - last;
+  bs.pendingMoves[realIdx].tIdx = tIdx;
+
+  // Find next player monster without a pending move
+  const nextP = bs.pTeam.findIndex((m,i) => m.hp>0 && !bs.pendingMoves.find(p=>p.who==='player'&&p.mIdx===i));
+  if (nextP === -1) {
+    // All chosen — add enemy moves
+    bs.eTeam.forEach((m,i) => {
+      if (m.hp<=0) return;
+      const alivePIdxs = bs.pTeam.map((pm,pi)=>pm.hp>0?pi:-1).filter(x=>x>=0);
+      const mv = m.moves[Math.floor(Math.random()*m.moves.length)];
+      const ti = mv.type === 'buff' ? i : alivePIdxs[Math.floor(Math.random()*alivePIdxs.length)];
+      bs.pendingMoves.push({ who:'enemy', mIdx:i, move:mv, tIdx:ti });
+    });
+    bs.phase = 'resolving';
+    renderBattle();
+    setTimeout(executeTurn, 400);
+  } else {
+    bs.activeIdx = nextP;
+    bs.phase = 'pick';
+    renderBattle();
+  }
+}
+
+function executeTurn() {
+  const bs = battleState;
+  // Sort by speed
+  const sorted = bs.pendingMoves.slice().sort((a,b) => {
+    const sa = a.who==='player' ? bs.pTeam[a.mIdx].spd : bs.eTeam[a.mIdx].spd;
+    const sb = b.who==='player' ? bs.pTeam[b.mIdx].spd : bs.eTeam[b.mIdx].spd;
+    return sb-sa;
+  });
+
+  for (const action of sorted) {
+    const atk = action.who==='player' ? bs.pTeam[action.mIdx] : bs.eTeam[action.mIdx];
+    if (atk.hp<=0) continue;
+
+    // Not enough MP — skip
+    if (atk.mp < action.move.mp) {
+      addLog(`${atk.emoji} ${atk.name} is out of MP for ${action.move.name}!`);
+      continue;
+    }
+    // Deduct MP
+    atk.mp = Math.max(0, atk.mp - action.move.mp);
+
+    if (action.move.type==='buff') {
+      const stat = action.move.effect;
+      atk.buffs[stat] = (atk.buffs[stat]||0)+20;
+      const healAmt = Math.floor(atk.maxHp * 0.20);
+      const prevHp = atk.hp;
+      atk.hp = Math.min(atk.maxHp, atk.hp + healAmt);
+      const healed = atk.hp - prevHp;
+      addLog(`${atk.emoji} ${atk.name} used ${action.move.name}! ${stat.toUpperCase()} +20${healed>0?` · ❤ +${healed} HP`:''} [MP:${atk.mp}]`);
+      continue;
+    }
+
+    const defTeam = action.who==='player' ? bs.eTeam : bs.pTeam;
+    const def = defTeam[action.tIdx];
+    if (!def || def.hp<=0) continue;
+
+    // Hit chance: base 80% + (attacker SPD - defender SPD), clamped 10–95%
+    const atkSpd = atk.spd + (atk.buffs?.spd||0);
+    const defSpd = def.spd + (def.buffs?.spd||0);
+    const hitChance = Math.min(0.95, Math.max(0.10, 0.80 + (atkSpd - defSpd) / 100 + (atk.hitBonus || 0) / 100));
+    if (Math.random() > hitChance) {
+      addLog(`${atk.emoji} ${atk.name} → ${action.move.name} → ${def.emoji} ${def.name}: MISS (${Math.round(hitChance*100)}%)`);
+      continue;
+    }
+
+    const isPhysical = action.move.type === 'physical';
+    const advantage = (!isPhysical && EL_ADVANTAGE[atk.element]===def.element) ? 1.5 : 1.0;
+    const atkStat = atk.atk + (atk.buffs?.atk||0);
+    const defStat = def.def + (def.buffs?.def||0);
+    let dmg, levelNote;
+    if (isPhysical) {
+      // Level difference: positive = attacker is higher level (bonus dmg), negative = attacker is lower (reduced dmg)
+      const lvlDiff = atk.level - def.level;
+      const lvlMult = 1 + (lvlDiff * 0.15); // ±15% per level difference, uncapped
+      const base = Math.floor((atkStat / defStat) * action.move.power * Math.max(0.1, lvlMult));
+      dmg = Math.max(1, base + Math.floor(Math.random() * 6) - 3);
+      if (lvlDiff > 0)       levelNote = ` ↑Lv+${lvlDiff}`;
+      else if (lvlDiff < 0)  levelNote = ` ↓Lv${lvlDiff}`;
+      else                   levelNote = ` =Lv`;
+      // MP regeneration: INT / 10, minimum 1, capped at maxMp
+      if (action.who === 'player') {
+        const mpRegen = Math.max(1, Math.floor(atk.int / 10));
+        const mpBefore = atk.mp;
+        atk.mp = Math.min(atk.maxMp, atk.mp + mpRegen);
+        const mpGained = atk.mp - mpBefore;
+        if (mpGained > 0) levelNote += ` +${mpGained}MP`;
+      }
+    } else {
+      dmg = Math.max(1, Math.floor((atkStat/defStat)*action.move.power*advantage) + Math.floor(Math.random()*8)-4);
+      levelNote = '';
+    }
+    // Crit chance = SPD / 5 (as %), crit damage = ×1.25
+    const critChance = Math.min(0.95, atkSpd / 500);
+    const isCrit = Math.random() < critChance;
+    if (isCrit) dmg = Math.floor(dmg * 1.25);
+
+    def.hp = Math.max(0, def.hp - dmg);
+    const seMsg  = advantage > 1 ? ' 💥 SUPER EFFECTIVE!' : '';
+    const critMsg = isCrit ? ' ⚡ CRIT!' : '';
+    const typeTag = isPhysical ? ` [PHY${levelNote}]` : '';
+    addLog(`${atk.emoji} ${atk.name} → ${action.move.name}${typeTag} → ${def.emoji} ${def.name}: ${dmg} dmg${seMsg}${critMsg} [MP:${atk.mp}]`);
+    if (def.hp<=0) addLog(`  💀 ${def.name} fainted!`);
+  }
+
+  bs.pendingMoves = [];
+  // Tally resource drops from newly fainted enemies this turn
+  bs.eTeam.forEach(m => {
+    if (m.hp <= 0 && !m.droppedResources) {
+      m.droppedResources = true;
+      const qty = Math.floor(Math.random() * 4); // 0–3
+      if (qty > 0) {
+        bs.resourceDrops = bs.resourceDrops || {};
+        bs.resourceDrops[m.element] = (bs.resourceDrops[m.element] || 0) + qty;
+        addLog(`  💎 ${qty}x ${ELEMENTAL_RESOURCES[m.element].emoji} ${ELEMENTAL_RESOURCES[m.element].name} dropped!`);
+      }
+    }
+  });
+
+  const aliveP = bs.pTeam.filter(m=>m.hp>0);
+  const aliveE = bs.eTeam.filter(m=>m.hp>0);
+
+  if (aliveE.length===0 || aliveP.length===0) {
+    bs.phase = 'result';
+    renderBattle();
+  } else {
+    bs.activeIdx = bs.pTeam.findIndex(m=>m.hp>0);
+    bs.phase = 'pick';
+    renderBattle();
+  }
+}
+
+function fleeBattle() {
+  // Each enemy has 50% chance to hit one random party member
+  const bs = battleState;
+  const fleeLog = [];
+  addLog('🏃 Fled from battle!');
+  bs.eTeam.forEach(enemy => {
+    if (Math.random() < 0.5) {
+      const alive = bs.pTeam.filter(m => m.hp > 0);
+      if (alive.length === 0) return;
+      const target = alive[Math.floor(Math.random() * alive.length)];
+      const dmg = Math.max(1, Math.floor(enemy.atk * 0.6));
+      target.hp = Math.max(0, target.hp - dmg);
+      fleeLog.push(`${enemy.emoji} ${enemy.name} strikes ${target.emoji} ${target.name} for ${dmg} dmg!`);
+    }
+  });
+  // Persist flee damage back to STATE.party
+  STATE.party = STATE.party.map(m => {
+    const bs_mon = bs.pTeam.find(p => p.uid === m.uid);
+    return bs_mon ? { ...m, hp: Math.max(0, bs_mon.hp) } : m;
+  });
+  // Persist log
+  STATE.lastBattleLog = [...(bs.log || []), ...fleeLog.map(t => ({ text: t, type: 'damage' }))];
+  STATE.lastBattleResult = 'defeat';
+  updateLastBattleBtn();
+  if (fleeLog.length > 0) toast(`🏃 Fled! ${fleeLog.length} enemy attack${fleeLog.length > 1 ? 's' : ''} landed!`);
+  else toast('🏃 Fled safely!');
+  setTimeout(() => { showScreen('map'); }, 500);
+}
+
+function endBattle(win, earned) {
+  // Persist the log before clearing battle state
+  STATE.lastBattleLog = [...(battleState.log || [])];
+  STATE.lastBattleResult = win ? 'victory' : 'defeat';
+  updateLastBattleBtn();
+  // Revive rate: 30% on win, 10% on loss
+  const revivePct = win ? 0.30 : 0.10;
+  if (win) {
+    STATE.gold += earned;
+    // Collect elemental resource drops
+    const drops = battleState.resourceDrops || {};
+    Object.entries(drops).forEach(([el, qty]) => {
+      STATE.resources[el] = (STATE.resources[el] || 0) + qty;
+    });
+    // XP + level up; restore HP from battle; revive fainted at 30% maxHp
+    const xpGain = battleState.eTeam.reduce((s,m)=>s+m.level*20,0);
+    STATE.party = STATE.party.map(m => {
+      const survivor = battleState.pTeam.find(p=>p.uid===m.uid);
+      const wasFainted = !survivor || survivor.hp <= 0;
+      if (wasFainted) {
+        // Revive at 30% maxHp; MP unchanged (already 0 or as-is)
+        return { ...m, hp: Math.max(1, Math.floor(m.maxHp * revivePct)) };
+      }
+      let { xp, xpNeeded, level, maxHp, atk, def, spd, int:int_, hp } = m;
+      let newXp = xp + xpGain;
+      hp = survivor.hp;
+      const mp = survivor.mp; // preserve MP spent in battle
+      const baseStats = MONSTER_TYPES.find(t => t.id === m.typeId)?.base || { hp:80, atk:60, def:50, spd:50, int:50 };
+      while (newXp >= xpNeeded) {
+        newXp -= xpNeeded; level++; xpNeeded = level*100;
+        const g = calcLevelUpGains(m.typeId, baseStats);
+        maxHp+=g.hp; atk+=g.atk; def+=g.def; spd+=g.spd; int_+=g.int;
+      }
+      return { ...m, xp:newXp, xpNeeded, level, maxHp, hp:Math.min(hp,maxHp), mp, atk, def, spd, int:int_ };
+    });
+    const fainted = STATE.party.filter(m => {
+      const s = battleState.pTeam.find(p=>p.uid===m.uid);
+      return !s || s.hp <= 0;
+    });
+    const faintMsg = fainted.length > 0 ? ` · ${fainted.length} revived at 30% HP` : '';
+    toast(`Victory! +${earned}g${faintMsg}`);
+  } else {
+    // Revive all fainted at 10%, keep survivors' HP from battle
+    STATE.party = STATE.party.map(m => {
+      const survivor = battleState.pTeam.find(p=>p.uid===m.uid);
+      const wasFainted = !survivor || survivor.hp <= 0;
+      if (wasFainted) {
+        return { ...m, hp: Math.max(1, Math.floor(m.maxHp * revivePct)) };
+      }
+      return { ...m, hp: Math.max(1, survivor.hp), mp: survivor.mp };
+    });
+    toast('Defeated... fainted monsters revive at 10% HP.');
+  }
+  // If this was a boss battle, return to ruins
+  if (STATE.encounter?.type === 'boss') {
+    const bossKey = STATE.encounter.key;
+    STATE.encounter = null;
+    if (win) {
+      showScreen('ruins');
+      onBossDefeated(bossKey);
+    } else {
+      showScreen('ruins');
+      renderRuins();
+      toast('Your party was defeated... Return when ready.');
+    }
+  } else {
+    STATE.encounter = null;
+    showScreen('map');
+  }
+}
+
+// ════════════════════════════════════════════════════════
+// PARTY SCREEN
+// ════════════════════════════════════════════════════════
+function renderPartyList() {
+  const allM = [...STATE.party, ...STATE.bench];
+  document.getElementById('plist-active').innerHTML = STATE.party.map(m => partyCard(m,false)).join('');
+  document.getElementById('plist-bench').innerHTML = STATE.bench.map(m => partyCard(m,true)).join('') || '<div style="color:var(--dim);font-size:14px">Empty</div>';
+}
+
+function partyCard(m, isBench) {
+  const el = ELEMENTS[m.element];
+  const sel = STATE.selectedMonUID === m.uid;
+  return `<div class="plist-card${sel?' selected':''}" onclick="selectMon('${m.uid}')" style="border-color:${sel?el.color:''}">
+    <span style="font-size:20px">${m.emoji}</span>
+    <span style="color:${el.color};font-size:17px"> ${m.name}</span>
+    <span style="color:var(--dim);font-size:14px"> Lv.${m.level}</span>
+    ${isBench?'<div class="bench-tag">[BENCH]</div>':''}
+  </div>`;
+}
+
+function selectMon(uid) {
+  STATE.selectedMonUID = uid;
+  document.getElementById('inv-detail').style.display = 'none';
+  document.getElementById('pdetail-content').style.display = 'block';
+  renderPartyList();
+  renderMonDetail(uid);
+}
+
+function renderMonDetail(uid) {
+  const allM = [...STATE.party, ...STATE.bench];
+  const m = allM.find(x=>x.uid===uid);
+  if (!m) return;
+  const el = ELEMENTS[m.element];
+  const xpPct = Math.min(100,(m.xp/m.xpNeeded)*100);
+  const inParty = STATE.party.find(x=>x.uid===uid);
+
+  // Tech slot
+  const equippedTech = m.equippedTech ? TECH_ITEMS.find(t => t.id === m.equippedTech) : null;
+  const techEl = equippedTech ? ELEMENTS[equippedTech.element] : null;
+  const techSlotHtml = `
+    <div style="margin-top:12px;border:1px solid ${equippedTech ? techEl.color : '#2a2a3a'};border-radius:8px;padding:10px 12px;background:${equippedTech ? techEl.bg : '#0a0a0a'}">
+      <div style="font-size:13px;color:var(--dim);letter-spacing:2px;margin-bottom:6px">⚙ TECH SLOT</div>
+      ${equippedTech ? `
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <span style="font-size:24px">${equippedTech.emoji}</span>
+          <div>
+            <div style="color:${techEl.color};font-size:17px">${equippedTech.name}</div>
+            <div style="color:var(--dim);font-size:13px">${equippedTech.desc}</div>
+            <div style="color:#a3e635;font-size:13px;margin-top:2px">+${equippedTech.statBoost} ${equippedTech.statStat.toUpperCase().replace('MAXHP','Max HP')}</div>
+          </div>
+        </div>
+        <div style="font-size:13px;color:var(--dim);letter-spacing:1px;margin-bottom:6px">POWER SLOTS</div>
+        <div style="display:flex;flex-direction:column;gap:5px;margin-bottom:8px">
+          ${(m.techSlots || [null,null,null]).map((cId, i) => {
+            const comp = cId ? COMPONENT_TYPES.find(c => c.id === cId) : null;
+            return comp
+              ? `<div style="display:flex;align-items:center;gap:8px;background:#0a0a0a;border:1px solid #2a3a2a;border-radius:5px;padding:5px 8px">
+                  <span style="font-size:18px">${comp.emoji}</span>
+                  <div style="flex:1;font-size:15px;color:var(--text)">${comp.name} <span style="color:#a3e635;font-size:13px">${comp.effect}</span></div>
+                  <button onclick="unequipComponent('${uid}',${i})" style="background:#1a0000;border:1px solid #ff3a3a;color:#ff6b6b;font-family:'VT323',monospace;font-size:14px;padding:2px 8px;border-radius:4px;cursor:pointer">✕</button>
+                </div>`
+              : `<div style="display:flex;align-items:center;gap:8px;background:#0a0a0a;border:1px dashed #2a2a3a;border-radius:5px;padding:5px 8px">
+                  <span style="font-size:18px;color:#333">○</span>
+                  <div style="flex:1;font-size:14px;color:#333">Empty Slot ${i+1}</div>
+                  <button onclick="promptEquipComponent('${uid}',${i})" style="background:#0a1a10;border:1px solid var(--accent);color:var(--accent);font-family:'VT323',monospace;font-size:14px;padding:2px 8px;border-radius:4px;cursor:pointer">+ Install</button>
+                </div>`;
+          }).join('')}
+        </div>
+        <button onclick="unequipTech('${uid}')" style="background:#1a0000;border:1px solid #ff3a3a;color:#ff6b6b;font-family:'VT323',monospace;font-size:16px;padding:4px 14px;border-radius:5px;cursor:pointer">✕ Unequip</button>
+      ` : `
+        <div style="color:var(--dim);font-size:14px;margin-bottom:8px">No Tech equipped</div>
+        <button onclick="promptEquipTech('${uid}')" style="background:#0a1a10;border:1px solid var(--accent);color:var(--accent);font-family:'VT323',monospace;font-size:16px;padding:4px 14px;border-radius:5px;cursor:pointer">+ Equip Tech</button>
+      `}
+    </div>`;
+
+  document.getElementById('pdetail-content').innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+      <span style="font-size:50px">${m.emoji}</span>
+      <div>
+        <div style="font-size:26px;color:${el.color}">${m.name}</div>
+        <div style="font-size:16px;color:var(--dim)">${el.icon} ${m.element} · Level ${m.level}</div>
+        <div style="font-size:14px;color:var(--dim);margin-top:4px">XP: ${m.xp}/${m.xpNeeded}</div>
+        <div class="bar-wrap" style="margin-top:3px"><div class="bar-fill" style="width:${xpPct}%;background:var(--gold)"></div></div>
+      </div>
+    </div>
+    <div class="stat-grid">
+      ${[['HP',m.hp+'/'+m.maxHp,'#2aff7a'],['ATK',m.atk,'#ff6b2a'],['DEF',m.def,'#2ab8ff'],['SPD',m.spd,'#c084fc'],['INT',m.int,'#2aff7a']].map(([l,v,c])=>`
+      <div class="stat-box"><div class="sl">${l}</div><div class="sv" style="color:${c}">${v}</div></div>`).join('')}
+    </div>
+    ${techSlotHtml}
+    <div style="font-size:16px;color:var(--dim);margin-top:10px;letter-spacing:2px">MOVES</div>
+    <div class="moves-list">
+      ${m.moves.map(mv=>`<div class="move-card" style="border-color:${el.color}44">
+        <div style="color:${el.glow}">${mv.name}</div>
+        <div class="mc-sub">${mv.type==='attack'?'PWR:'+mv.power:'BUFF'} · MP:${mv.mp}</div>
+      </div>`).join('')}
+    </div>
+    <div class="action-row">
+      ${inParty
+        ? `<button class="small-btn" onclick="moveToBench('${uid}')" ${STATE.party.length<=1?'disabled':''}>→ Bench</button>`
+        : `<button class="small-btn" onclick="moveToParty('${uid}')" ${STATE.party.length>=6?'disabled':''}>→ Party</button>`
+      }
+    </div>
+  `;
+}
+
+function moveToBench(uid) {
+  if (STATE.party.length<=1) return;
+  const m = STATE.party.find(x=>x.uid===uid);
+  STATE.party = STATE.party.filter(x=>x.uid!==uid);
+  STATE.bench.push(m);
+  renderPartyList();
+  renderMonDetail(uid);
+}
+
+function moveToParty(uid) {
+  if (STATE.party.length>=6) return;
+  const m = STATE.bench.find(x=>x.uid===uid);
+  STATE.bench = STATE.bench.filter(x=>x.uid!==uid);
+  STATE.party.push(m);
+  renderPartyList();
+  renderMonDetail(uid);
+}
+
+function promptEquipTech(monUid) {
+  document.getElementById('use-item-overlay')?.remove();
+  // Gather tech from inventory
+  const techInInv = TECH_ITEMS.filter(t => STATE.inventory.some(i => i.id === t.id));
+  if (techInInv.length === 0) {
+    toast('No Tech items in inventory!');
+    return;
+  }
+  const overlay = document.createElement('div');
+  overlay.id = 'use-item-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:#000000bb;z-index:300;display:flex;align-items:center;justify-content:center;';
+  const box = document.createElement('div');
+  box.style.cssText = 'background:var(--panel);border:2px solid var(--accent);border-radius:12px;padding:20px 22px;min-width:260px;max-width:90vw;font-family:"VT323",monospace;';
+  const title = document.createElement('div');
+  title.style.cssText = 'font-size:22px;color:var(--accent);margin-bottom:12px';
+  title.textContent = '⚙ Choose Tech to Equip';
+  box.appendChild(title);
+  techInInv.forEach(tech => {
+    const tel = ELEMENTS[tech.element];
+    const count = STATE.inventory.filter(i => i.id === tech.id).length;
+    const row = document.createElement('div');
+    row.style.cssText = `display:flex;align-items:center;gap:10px;padding:9px;margin-bottom:6px;border-radius:6px;border:1px solid ${tel.color};background:${tel.bg};cursor:pointer;`;
+    row.innerHTML = `<span style="font-size:22px">${tech.emoji}</span>
+      <div style="flex:1">
+        <div style="color:${tel.color};font-size:18px">${tech.name} <span style="color:var(--dim);font-size:13px">x${count}</span></div>
+        <div style="color:var(--dim);font-size:13px">${tech.desc}</div>
+        <div style="color:#a3e635;font-size:13px">+${tech.statBoost} ${tech.statStat.toUpperCase().replace('MAXHP','Max HP')} · 3 empty slots</div>
+      </div>`;
+    row.addEventListener('click', () => { equipTech(monUid, tech.id); overlay.remove(); });
+    box.appendChild(row);
+  });
+  const cancelBtn = document.createElement('button');
+  cancelBtn.textContent = 'Cancel';
+  cancelBtn.style.cssText = 'margin-top:10px;background:transparent;border:1px solid #333;color:var(--dim);font-family:"VT323",monospace;font-size:18px;padding:5px 16px;border-radius:5px;cursor:pointer;';
+  cancelBtn.addEventListener('click', () => overlay.remove());
+  box.appendChild(cancelBtn);
+  overlay.appendChild(box);
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+}
+
+// Apply or remove component stat bonuses (sign: +1 to apply, -1 to remove)
+function applyComponentStats(m, comp, sign) {
+  const u = { ...m };
+  Object.entries(comp.stats).forEach(([stat, val]) => {
+    if (stat === 'maxHp') {
+      u.maxHp = u.maxHp + sign * val;
+      u.hp = sign > 0 ? Math.min(u.hp + val, u.maxHp) : Math.min(u.hp, u.maxHp);
+    } else if (stat === 'maxMp') {
+      u.maxMp = u.maxMp + sign * val;
+      u.mp = sign > 0 ? Math.min(u.mp + val, u.maxMp) : Math.min(u.mp, u.maxMp);
+    } else {
+      u[stat] = (u[stat] || 0) + sign * val;
+    }
+  });
+  return u;
+}
+
+function equipTech(monUid, techId) {
+  const tech = TECH_ITEMS.find(t => t.id === techId);
+  if (!tech) return;
+  const applyAll = arr => arr.map(m => {
+    if (m.uid !== monUid) return m;
+    const updated = { ...m, equippedTech: techId, techSlots: [null, null, null] };
+    if (tech.statStat === 'maxHp') {
+      updated.maxHp = m.maxHp + tech.statBoost;
+      updated.hp = Math.min(m.hp + tech.statBoost, updated.maxHp);
+    } else {
+      updated[tech.statStat] = m[tech.statStat] + tech.statBoost;
+    }
+    return updated;
+  });
+  STATE.party = applyAll(STATE.party);
+  STATE.bench = applyAll(STATE.bench);
+  // Consume one from inventory
+  const idx = STATE.inventory.findIndex(i => i.id === techId);
+  if (idx >= 0) STATE.inventory.splice(idx, 1);
+  toast(`Equipped ${tech.emoji} ${tech.name}! +${tech.statBoost} ${tech.statStat.toUpperCase().replace('MAXHP','Max HP')}`);
+  renderPartyList();
+  renderMonDetail(monUid);
+}
+
+function unequipTech(monUid) {
+  const mon = [...STATE.party, ...STATE.bench].find(m => m.uid === monUid);
+  if (!mon || !mon.equippedTech) return;
+  const tech = TECH_ITEMS.find(t => t.id === mon.equippedTech);
+  const applyAll = arr => arr.map(m => {
+    if (m.uid !== monUid) return m;
+    // Remove all slotted component stats first
+    let updated = { ...m };
+    (m.techSlots || []).forEach(cId => {
+      if (!cId) return;
+      const comp = COMPONENT_TYPES.find(c => c.id === cId);
+      if (comp) updated = applyComponentStats(updated, comp, -1);
+    });
+    // Remove tech stat
+    if (tech.statStat === 'maxHp') {
+      updated.maxHp = updated.maxHp - tech.statBoost;
+      updated.hp = Math.min(updated.hp, updated.maxHp);
+    } else {
+      updated[tech.statStat] = updated[tech.statStat] - tech.statBoost;
+    }
+    return { ...updated, equippedTech: null, techSlots: null };
+  });
+  STATE.party = applyAll(STATE.party);
+  STATE.bench = applyAll(STATE.bench);
+  // Return slotted components to inventory first
+  (mon.techSlots || []).forEach(cId => {
+    if (!cId) return;
+    const comp = COMPONENT_TYPES.find(c => c.id === cId);
+    if (!comp) return;
+    const cStack = STATE.inventory.filter(i => i.id === cId).length;
+    if (cStack < 10) STATE.inventory.push({ ...comp });
+  });
+  // Return tech to inventory
+  const stackCount = STATE.inventory.filter(i => i.id === tech.id).length;
+  if (stackCount < 10) {
+    STATE.inventory.push({ ...tech });
+    toast(`Unequipped ${tech.emoji} ${tech.name} — returned to inventory.`);
+  } else {
+    toast(`Unequipped ${tech.emoji} ${tech.name} — inventory stack full, item lost!`);
+  }
+  renderPartyList();
+  renderMonDetail(monUid);
+}
+
+function promptEquipComponent(monUid, slotIdx) {
+  document.getElementById('use-item-overlay')?.remove();
+  const compInInv = COMPONENT_TYPES.filter(c => STATE.inventory.some(i => i.id === c.id));
+  if (compInInv.length === 0) { toast('No Components in inventory!'); return; }
+  const overlay = document.createElement('div');
+  overlay.id = 'use-item-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:#000000bb;z-index:300;display:flex;align-items:center;justify-content:center;';
+  const box = document.createElement('div');
+  box.style.cssText = 'background:var(--panel);border:2px solid var(--accent);border-radius:12px;padding:20px 22px;min-width:260px;max-width:90vw;max-height:80vh;overflow-y:auto;font-family:"VT323",monospace;';
+  const title = document.createElement('div');
+  title.style.cssText = 'font-size:22px;color:var(--accent);margin-bottom:12px';
+  title.textContent = `Install Component — Slot ${slotIdx + 1}`;
+  box.appendChild(title);
+  compInInv.forEach(comp => {
+    const count = STATE.inventory.filter(i => i.id === comp.id).length;
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:9px;margin-bottom:6px;border-radius:6px;border:1px solid #2a3a4a;background:#0a1020;cursor:pointer;';
+    row.innerHTML = `<span style="font-size:22px">${comp.emoji}</span>
+      <div style="flex:1">
+        <div style="color:var(--text);font-size:18px">${comp.name} <span style="color:var(--dim);font-size:13px">x${count}</span></div>
+        <div style="color:#a3e635;font-size:13px">${comp.effect}</div>
+      </div>`;
+    row.addEventListener('click', () => { equipComponent(monUid, slotIdx, comp.id); overlay.remove(); });
+    box.appendChild(row);
+  });
+  const cancelBtn = document.createElement('button');
+  cancelBtn.textContent = 'Cancel';
+  cancelBtn.style.cssText = 'margin-top:10px;background:transparent;border:1px solid #333;color:var(--dim);font-family:"VT323",monospace;font-size:18px;padding:5px 16px;border-radius:5px;cursor:pointer;';
+  cancelBtn.addEventListener('click', () => overlay.remove());
+  box.appendChild(cancelBtn);
+  overlay.appendChild(box);
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+}
+
+function equipComponent(monUid, slotIdx, compId) {
+  const comp = COMPONENT_TYPES.find(c => c.id === compId);
+  if (!comp) return;
+  const applyAll = arr => arr.map(m => {
+    if (m.uid !== monUid) return m;
+    const slots = [...(m.techSlots || [null, null, null])];
+    slots[slotIdx] = compId;
+    return applyComponentStats({ ...m, techSlots: slots }, comp, +1);
+  });
+  STATE.party = applyAll(STATE.party);
+  STATE.bench = applyAll(STATE.bench);
+  const idx = STATE.inventory.findIndex(i => i.id === compId);
+  if (idx >= 0) STATE.inventory.splice(idx, 1);
+  toast(`Installed ${comp.emoji} ${comp.name} in slot ${slotIdx + 1}!`);
+  const mon = [...STATE.party, ...STATE.bench].find(m => m.uid === monUid);
+  if (mon) renderMonDetail(monUid);
+}
+
+function unequipComponent(monUid, slotIdx) {
+  const mon = [...STATE.party, ...STATE.bench].find(m => m.uid === monUid);
+  if (!mon || !mon.techSlots?.[slotIdx]) return;
+  const compId = mon.techSlots[slotIdx];
+  const comp = COMPONENT_TYPES.find(c => c.id === compId);
+  if (!comp) return;
+  const applyAll = arr => arr.map(m => {
+    if (m.uid !== monUid) return m;
+    const slots = [...(m.techSlots || [null, null, null])];
+    slots[slotIdx] = null;
+    return applyComponentStats({ ...m, techSlots: slots }, comp, -1);
+  });
+  STATE.party = applyAll(STATE.party);
+  STATE.bench = applyAll(STATE.bench);
+  const stackCount = STATE.inventory.filter(i => i.id === compId).length;
+  if (stackCount < 10) {
+    STATE.inventory.push({ ...comp });
+    toast(`Removed ${comp.emoji} ${comp.name} — returned to inventory.`);
+  } else {
+    toast(`Removed ${comp.emoji} ${comp.name} — inventory full, item lost!`);
+  }
+  renderMonDetail(monUid);
+}
+
+function showInvDetail() {
+  document.getElementById('pdetail-content').style.display = 'none';
+  document.getElementById('inv-detail').style.display = 'block';
+  // On mobile, hide the party list so inventory gets full height
+  if (window.innerWidth <= 520) {
+    document.getElementById('party-list').style.display = 'none';
+  }
+  renderInvGrid();
+}
+
+function hideInvDetail() {
+  document.getElementById('inv-detail').style.display = 'none';
+  document.getElementById('pdetail-content').style.display = 'block';
+  document.getElementById('party-list').style.display = '';
+}
+
+
+function promptEquipFromInv(techId) {
+  const tech = TECH_ITEMS.find(t => t.id === techId);
+  if (!tech) return;
+  document.getElementById("use-item-overlay")?.remove();
+  const allMons = [...STATE.party, ...STATE.bench];
+  const overlay = document.createElement("div");
+  overlay.id = "use-item-overlay";
+  overlay.style.cssText = "position:fixed;inset:0;background:#000000bb;z-index:300;display:flex;align-items:center;justify-content:center;";
+  const box = document.createElement("div");
+  box.style.cssText = "background:var(--panel);border:2px solid var(--accent);border-radius:12px;padding:20px 22px;min-width:260px;max-width:90vw;font-family:VT323,monospace;";
+  const title = document.createElement("div");
+  title.style.cssText = "font-size:20px;color:var(--accent);margin-bottom:4px";
+  title.textContent = tech.emoji + " " + tech.name;
+  box.appendChild(title);
+  const sub = document.createElement("div");
+  sub.style.cssText = "font-size:14px;color:var(--dim);margin-bottom:12px";
+  sub.textContent = "Choose a monster to equip this Tech:";
+  box.appendChild(sub);
+  allMons.forEach(m => {
+    const mel = ELEMENTS[m.element];
+    const currentTech = m.equippedTech ? TECH_ITEMS.find(t => t.id === m.equippedTech) : null;
+    const row = document.createElement("div");
+    row.style.cssText = "display:flex;align-items:center;gap:8px;padding:8px;margin-bottom:5px;border-radius:6px;border:1px solid " + mel.color + ";background:" + mel.bg + ";cursor:pointer;";
+    row.innerHTML = "<span style=\"font-size:20px\">" + m.emoji + "</span><div style=\"flex:1\"><span style=\"color:" + mel.color + ";font-size:17px\">" + m.name + "</span><span style=\"color:var(--dim);font-size:14px\"> Lv." + m.level + "</span><div style=\"font-size:12px;color:" + (currentTech ? "#ffd84a" : "#555") + "\">" + (currentTech ? "⚙ " + currentTech.name + " will be replaced" : "No tech") + "</div></div>";
+    row.addEventListener("click", () => { overlay.remove(); equipTech(m.uid, techId); });
+    box.appendChild(row);
+  });
+  const cancelBtn = document.createElement("button");
+  cancelBtn.textContent = "Cancel";
+  cancelBtn.style.cssText = "margin-top:10px;background:transparent;border:1px solid #333;color:var(--dim);font-family:VT323,monospace;font-size:18px;padding:5px 16px;border-radius:5px;cursor:pointer;";
+  cancelBtn.addEventListener("click", () => overlay.remove());
+  box.appendChild(cancelBtn);
+  overlay.appendChild(box);
+  overlay.addEventListener("click", e => { if (e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+}
+function getStackedInventory() {
+  const plantIds   = new Set(PLANT_TYPES.map(p => p.id));
+  const mineralIds = new Set(MINERAL_TYPES.map(m => m.id));
+  const techIds    = new Set(TECH_RECIPES.map(r => r.itemId));
+  const stacks = {};
+  const loose = [];
+  STATE.inventory.forEach((item, idx) => {
+    if (plantIds.has(item.id) || mineralIds.has(item.id) || techIds.has(item.id)) {
+      if (stacks[item.id]) stacks[item.id].qty++;
+      else stacks[item.id] = { ...item, qty: 1, stackId: item.id };
+    } else {
+      loose.push({ ...item, qty: 1, origIdx: idx });
+    }
+  });
+  return [...Object.values(stacks), ...loose];
+}
+
+function renderInvGrid() {
+  const grid = document.getElementById('inv-grid');
+
+  // ── Resource summary card ──────────────────────────────
+  const resCard = `<div style="grid-column:1/-1;background:#0a0a12;border:1px solid #2a2a3a;border-radius:8px;padding:10px 14px;margin-bottom:4px">
+    <div style="font-size:13px;color:var(--dim);letter-spacing:2px;margin-bottom:8px">ELEMENTAL RESOURCES</div>
+    <div style="display:flex;flex-wrap:wrap;gap:10px">
+      ${Object.entries(STATE.resources).map(([el, qty]) => {
+        const r = ELEMENTAL_RESOURCES[el];
+        const elData = ELEMENTS[el];
+        return `<div style="display:flex;align-items:center;gap:5px;background:${elData.bg};border:1px solid ${elData.color}44;border-radius:5px;padding:4px 9px">
+          <span style="font-size:16px">${r.emoji}</span>
+          <span style="color:${elData.color};font-size:15px">${r.name}</span>
+          <span style="color:var(--gold);font-size:15px;margin-left:4px">${qty}</span>
+        </div>`;
+      }).join('')}
+    </div>
+  </div>`;
+
+  const stacked = getStackedInventory();
+  if (stacked.length === 0) {
+    grid.innerHTML = resCard + '<div style="color:var(--dim);font-size:16px">No items yet. Explore the world!</div>';
+    return;
+  }
+
+  grid.innerHTML = resCard + stacked.map((item) => {
+    const plant   = PLANT_TYPES.find(p => p.id === item.id);
+    const mineral = MINERAL_TYPES.find(m => m.id === item.id);
+    const compDef = COMPONENT_TYPES.find(c => c.id === item.id);
+    const recipe  = !plant && !mineral && TECH_RECIPES.find(r => r.itemId === item.id);
+    const compRecipe = compDef && COMPONENT_RECIPES.find(r => r.itemId === item.id);
+    const isTech  = item.type === 'tech';
+    const isComp  = item.type === 'component';
+    const rar     = item.rarity || (compDef?.rarity) || '';
+    const val     = item.value  || (compDef?.value)  || 0;
+    const rc      = rar==='rare'?'rare-rare':rar==='uncommon'?'rare-uncommon':'';
+    const bdHint  = (plant || mineral)
+      ? `${ELEMENTAL_RESOURCES[(plant||mineral).element].emoji} 1–3x ${ELEMENTAL_RESOURCES[(plant||mineral).element].name}`
+      : recipe
+        ? Object.entries(recipe.cost).map(([el, qty]) => `${ELEMENTAL_RESOURCES[el].emoji}${qty}`).join(' ')
+        : compRecipe
+          ? Object.entries(compRecipe.cost).map(([el, qty]) => `${ELEMENTAL_RESOURCES[el].emoji}${qty}`).join(' ')
+          : '—';
+    const stackCap = (isTech || isComp) ? 10 : 50;
+    const stackLabel = item.qty > 1
+      ? `<div style="font-size:13px;color:var(--gold);margin-top:2px">x${item.qty} / ${stackCap}</div>`
+      : '';
+    const useKey = item.stackId || ('loose_' + item.origIdx);
+    const techEl = isTech ? ELEMENTS[item.element] : null;
+    const mineralEl = mineral ? ELEMENTS[mineral.element] : null;
+    const slotsHtml = isTech && item.slots
+      ? `<div style="display:flex;gap:3px;margin:5px 0">
+          ${item.slots.map((_,i) => `<div style="flex:1;background:#111;border:1px solid #222;border-radius:3px;padding:3px;text-align:center;font-size:10px;color:#333">SLOT ${i+1}</div>`).join('')}
+        </div>`
+      : '';
+    const breakBtn = `<button onclick="promptBreakdownStack('${useKey}')" style="flex:1;background:#1a0a00;border:1px solid #ff6b2a;color:#ff6b2a;font-family:'VT323',monospace;font-size:15px;padding:4px 0;border-radius:4px;cursor:pointer" title="Breakdown → ${bdHint}">⚙ Break</button>`;
+    const actionButtons = isTech
+      ? `<button onclick="promptEquipFromInv('${item.id}')" style="flex:1;background:#0a1a2a;border:1px solid ${techEl.color};color:${techEl.color};font-family:'VT323',monospace;font-size:15px;padding:4px 0;border-radius:4px;cursor:pointer">⚙ Equip</button>
+         ${breakBtn}`
+      : (isComp || mineral)
+        ? breakBtn
+        : `<button onclick="promptUseItemStack('${useKey}')" style="flex:1;background:#0a2a10;border:1px solid var(--accent);color:var(--accent);font-family:'VT323',monospace;font-size:15px;padding:4px 0;border-radius:4px;cursor:pointer">▶ Use</button>
+           ${breakBtn}`;
+    const cardBorder = isTech ? `style="border-color:${techEl.color}88"` : mineral ? `style="border-color:${mineralEl.color}88"` : isComp ? `style="border-color:${rar==='rare'?'#ffd700':rar==='uncommon'?'#a855f7':'#2a3a4a'}88"` : '';
+    const effText = isTech ? `+${item.statBoost} ${item.statStat.toUpperCase().replace('MAXHP','Max HP')}` : isComp ? (compDef?.effect || item.effect) : item.effect;
+    const rarityLine = isComp
+      ? `<div class="ic-rare" style="color:#2ab8ff">${rar} component · 💰${val}</div>`
+      : isTech
+        ? `<div class="ic-rare">${rar}</div>`
+        : `<div class="ic-rare">${rar} · 💰${val}</div>`;
+    const typeTag = isTech
+      ? ` <span style="font-size:11px;color:${techEl.color}">TECH</span>`
+      : mineral ? ` <span style="font-size:11px;color:${mineralEl.color}">MINERAL</span>`
+      : isComp  ? ` <span style="font-size:11px;color:#2ab8ff">COMP</span>`
+      : '';
+    return `<div class="inv-card ${rc}" ${cardBorder}>
+      <div class="ic-emoji">${item.emoji}</div>
+      <div class="ic-name">${item.name}${typeTag}</div>
+      ${stackLabel}
+      ${slotsHtml}
+      <div class="ic-eff">${effText}</div>
+      ${rarityLine}
+      <div style="display:flex;gap:6px;margin-top:7px">${actionButtons}</div>
+    </div>`;
+  }).join('');
+}
+
+// Resolve a useKey back to the first matching inventory index
+function resolveItemIdx(useKey) {
+  if (useKey.startsWith('loose_')) {
+    return parseInt(useKey.replace('loose_', ''));
+  }
+  // stackId = item id — find first occurrence
+  return STATE.inventory.findIndex(i => i.id === useKey);
+}
+
+function promptUseItemStack(useKey) {
+  const idx = resolveItemIdx(useKey);
+  promptUseItem(idx);
+}
+
+function promptBreakdownStack(useKey) {
+  const idx = resolveItemIdx(useKey);
+  promptBreakdown(idx);
+}
+
+function promptUseItem(idx) {
+  const item = STATE.inventory[idx];
+  if (!item) return;
+
+  // Remove any existing overlay
+  document.getElementById('use-item-overlay')?.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'use-item-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:#000000bb;z-index:300;display:flex;align-items:center;justify-content:center;';
+
+  const box = document.createElement('div');
+  box.style.cssText = 'background:var(--panel);border:2px solid var(--accent);border-radius:12px;padding:20px 22px;min-width:260px;max-width:90vw;font-family:"VT323",monospace;';
+
+  const title = document.createElement('div');
+  title.style.cssText = 'font-size:22px;color:var(--accent);margin-bottom:4px';
+  title.textContent = item.emoji + ' ' + item.name;
+  box.appendChild(title);
+
+  const eff = document.createElement('div');
+  eff.style.cssText = 'font-size:15px;color:var(--dim);margin-bottom:14px';
+  eff.textContent = item.effect;
+  box.appendChild(eff);
+
+  const lbl = document.createElement('div');
+  lbl.style.cssText = 'font-size:14px;color:var(--dim);letter-spacing:2px;margin-bottom:8px';
+  lbl.textContent = 'USE ON:';
+  box.appendChild(lbl);
+
+  const allMons = [...STATE.party, ...STATE.bench];
+  allMons.forEach(m => {
+    const el = ELEMENTS[m.element];
+    const inParty = !!STATE.party.find(x => x.uid === m.uid);
+    const hpFull = m.hp >= m.maxHp;
+    const disabled = item.effect.toLowerCase().includes('heal') && hpFull;
+
+    const row = document.createElement('div');
+    row.style.cssText = `display:flex;align-items:center;gap:8px;padding:8px;margin-bottom:5px;
+      border-radius:6px;border:1px solid ${disabled ? '#222' : el.color};
+      background:${el.bg};opacity:${disabled ? 0.4 : 1};cursor:${disabled ? 'not-allowed' : 'pointer'};`;
+
+    row.innerHTML = `<span style="font-size:20px">${m.emoji}</span>
+      <div style="flex:1">
+        <span style="color:${el.color};font-size:17px">${m.name}</span>
+        <span style="color:var(--dim);font-size:14px"> Lv.${m.level}${inParty ? '' : ' [bench]'}</span>
+        <div style="font-size:13px;color:${m.hp < m.maxHp ? '#ff6b6b' : 'var(--dim)'}">HP ${m.hp}/${m.maxHp}</div>
+      </div>
+      ${disabled ? '<span style="font-size:13px;color:#444">FULL</span>' : ''}`;
+
+    if (!disabled) {
+      row.addEventListener('click', () => doUseItem(idx, m.uid));
+    }
+    box.appendChild(row);
+  });
+
+  const cancelBtn = document.createElement('button');
+  cancelBtn.textContent = 'Cancel';
+  cancelBtn.style.cssText = 'margin-top:10px;background:transparent;border:1px solid #333;color:var(--dim);font-family:"VT323",monospace;font-size:18px;padding:5px 16px;border-radius:5px;cursor:pointer;';
+  cancelBtn.addEventListener('click', () => overlay.remove());
+  box.appendChild(cancelBtn);
+
+  overlay.appendChild(box);
+  // Click outside box to dismiss
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+}
+
+function doUseItem(idx, monUid) {
+  document.getElementById('use-item-overlay')?.remove();
+  const item = STATE.inventory[idx];
+  if (!item) return;
+
+  const applyTo = (arr) => arr.map(m => {
+    if (m.uid !== monUid) return m;
+    // ── Plants: 25% MaxHP & MP; matching element = 35% ──
+    const plant = PLANT_TYPES.find(p => p.id === item.id);
+    if (plant) {
+      const pct = m.element === plant.element ? 0.35 : 0.25;
+      return { ...m,
+        hp: Math.min(m.maxHp, m.hp + Math.ceil(m.maxHp * pct)),
+        mp: Math.min(m.maxMp, m.mp + Math.ceil(m.maxMp * pct)),
+      };
+    }
+    // ── Minerals ──
+    if (item.effect.includes('+5 MaxHP'))    return { ...m, maxHp: m.maxHp+5, hp: Math.min(m.hp+5, m.maxHp+5) };
+    if (item.effect.includes('+5 DEF'))      return { ...m, def: m.def+5 };
+    return m;
+  });
+
+  STATE.party = applyTo(STATE.party);
+  STATE.bench = applyTo(STATE.bench);
+  STATE.inventory.splice(idx, 1);
+  const mon = [...STATE.party, ...STATE.bench].find(m => m.uid === monUid);
+  const plant = PLANT_TYPES.find(p => p.id === item.id);
+  const healDesc = plant
+    ? (mon && mon.element === plant.element ? '+35% HP & MP' : '+25% HP & MP')
+    : item.effect;
+  toast(`Used ${item.emoji} ${item.name} on ${mon?.emoji||''} ${mon?.name||''} — ${healDesc}`);
+  renderInvGrid();
+  renderPartyList();
+}
+
+function promptBreakdown(idx) {
+  const item = STATE.inventory[idx];
+  if (!item) return;
+  document.getElementById('use-item-overlay')?.remove();
+
+  const plant   = PLANT_TYPES.find(p => p.id === item.id);
+  const mineral = !plant && MINERAL_TYPES.find(m => m.id === item.id);
+  const recipe  = !plant && !mineral && (CRAFT_RECIPES.find(r => r.itemId === item.id) || TECH_RECIPES.find(r => r.itemId === item.id) || COMPONENT_RECIPES.find(r => r.itemId === item.id));
+
+  const overlay = document.createElement('div');
+  overlay.id = 'use-item-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:#000000bb;z-index:300;display:flex;align-items:center;justify-content:center;';
+
+  const box = document.createElement('div');
+  box.style.cssText = 'background:var(--panel);border:2px solid #ff6b2a;border-radius:12px;padding:22px 24px;min-width:250px;max-width:90vw;font-family:"VT323",monospace;text-align:center;';
+
+  const title = document.createElement('div');
+  title.style.cssText = 'font-size:22px;color:#ff9a6a;margin-bottom:4px';
+  title.textContent = `⚙ Break Down ${item.emoji} ${item.name}`;
+  box.appendChild(title);
+
+  const warn = document.createElement('div');
+  warn.style.cssText = 'font-size:15px;color:var(--dim);margin-bottom:14px';
+  warn.textContent = 'This will permanently destroy the item.';
+  box.appendChild(warn);
+
+  const yieldDiv = document.createElement('div');
+  yieldDiv.style.cssText = 'font-size:16px;margin-bottom:16px;background:#0a0a0a;border:1px solid #2a1a00;border-radius:6px;padding:10px';
+
+  if (plant || mineral) {
+    const src = plant || mineral;
+    const r = ELEMENTAL_RESOURCES[src.element];
+    const elData = ELEMENTS[src.element];
+    yieldDiv.innerHTML = '<div style="color:var(--dim);font-size:13px;letter-spacing:1px;margin-bottom:6px">YOU WILL RECEIVE:</div>' +
+      `<div style="color:${elData.color}">${r.emoji} 1–3x ${r.name}</div>`;
+  } else if (recipe) {
+    yieldDiv.innerHTML = '<div style="color:var(--dim);font-size:13px;letter-spacing:1px;margin-bottom:6px">YOU WILL RECEIVE:</div>' +
+      Object.entries(recipe.cost).map(([el, qty]) => {
+        const r = ELEMENTAL_RESOURCES[el];
+        const elData = ELEMENTS[el];
+        return `<div style="color:${elData.color};margin-bottom:3px">${r.emoji} ${qty}x ${r.name}</div>`;
+      }).join('');
+  } else {
+    yieldDiv.innerHTML = '<div style="color:var(--dim);font-size:14px">No recipe — nothing will be recovered.</div>';
+  }
+  box.appendChild(yieldDiv);
+
+  const btnRow = document.createElement('div');
+  btnRow.style.cssText = 'display:flex;gap:10px;justify-content:center';
+
+  if (plant || mineral || recipe) {
+    const confirmBtn = document.createElement('button');
+    confirmBtn.textContent = '⚙ Confirm Breakdown';
+    confirmBtn.style.cssText = 'background:#1a0800;border:2px solid #ff6b2a;color:#ff9a6a;font-family:"VT323",monospace;font-size:18px;padding:7px 16px;border-radius:6px;cursor:pointer;';
+    confirmBtn.addEventListener('click', () => doBreakdown(idx));
+    btnRow.appendChild(confirmBtn);
+  }
+
+  const cancelBtn = document.createElement('button');
+  cancelBtn.textContent = 'Cancel';
+  cancelBtn.style.cssText = 'background:transparent;border:1px solid #333;color:var(--dim);font-family:"VT323",monospace;font-size:18px;padding:7px 16px;border-radius:6px;cursor:pointer;';
+  cancelBtn.addEventListener('click', () => overlay.remove());
+  btnRow.appendChild(cancelBtn);
+
+  box.appendChild(btnRow);
+  overlay.appendChild(box);
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+}
+
+function doBreakdown(idx) {
+  document.getElementById('use-item-overlay')?.remove();
+  const item = STATE.inventory[idx];
+  if (!item) return;
+
+  const plant   = PLANT_TYPES.find(p => p.id === item.id);
+  const mineral = !plant && MINERAL_TYPES.find(m => m.id === item.id);
+
+  if (plant || mineral) {
+    const src = plant || mineral;
+    const qty = 1 + Math.floor(Math.random() * 3); // 1–3
+    STATE.resources[src.element] = (STATE.resources[src.element] || 0) + qty;
+    STATE.inventory.splice(idx, 1);
+    const r = ELEMENTAL_RESOURCES[src.element];
+    toast(`Broke down ${item.emoji} ${item.name} → ${r.emoji} ${qty}x ${r.name}`);
+    renderInvGrid();
+    return;
+  }
+
+  const recipe = CRAFT_RECIPES.find(r => r.itemId === item.id)
+    || TECH_RECIPES.find(r => r.itemId === item.id)
+    || COMPONENT_RECIPES.find(r => r.itemId === item.id);
+  if (!recipe) return;
+  Object.entries(recipe.cost).forEach(([el, qty]) => {
+    STATE.resources[el] = (STATE.resources[el] || 0) + qty;
+  });
+  STATE.inventory.splice(idx, 1);
+  const gains = Object.entries(recipe.cost).map(([el, qty]) => `${ELEMENTAL_RESOURCES[el].emoji}${qty}`).join(' ');
+  toast(`Broke down ${item.emoji} ${item.name} → ${gains}`);
+  renderInvGrid();
+}
+
+// ════════════════════════════════════════════════════════
+// RUINS
+// ════════════════════════════════════════════════════════
+let activeRuinsTab = 'main';
+
+function enterRuins() {
+  showScreen('ruins');
+  renderRuins();
+}
+
+function getRuinsKey() { return `${STATE.pos.r},${STATE.pos.c}`; }
+
+function getRuinsState() {
+  const key = getRuinsKey();
+  if (!STATE.ruins[key]) {
+    STATE.ruins[key] = { bossDefeated: false, rebuildStep: 0, facilities: [], relicView: 'buy' };
+  }
+  return STATE.ruins[key];
+}
+
+function switchRuinsTab(tab) {
+  activeRuinsTab = tab;
+  ['main','inn','tech','stable','relic','shrine'].forEach(t => {
+    const el = document.getElementById(`ruins-tab-${t}`);
+    if (el) el.style.display = t === tab ? 'block' : 'none';
+  });
+  if (tab === 'tech')   renderWorkshopInto('ruins-tab-tech');
+  if (tab === 'stable') renderRuinsStableTab();
+  if (tab === 'inn')    renderInnTab('ruins-tab-inn', 'ruinsInnRest');
+  if (tab === 'relic')  renderRelicShop();
+  if (tab === 'shrine') renderMonsterShrine();
+  if (tab === 'main')   renderRuinsMain();
+}
+
+function ruinsInnRest(hours) { doInnRest(hours, renderRuins); }
+
+function renderRuins() {
+  const key = getRuinsKey();
+  const rd = RUINS_DATA[key];
+  const rs = getRuinsState();
+  const name = TILE_NAMES[key] || rd?.bossName || 'Ruins';
+  document.getElementById('ruins-title').textContent = `⛩ ${name}`;
+
+  // Build tab bar based on state
+  const tabBar = document.getElementById('ruins-tab-bar');
+  const tabs = [{ id:'main', label:'⛩ Overview' }];
+  if (rs.bossDefeated && rs.rebuildStep >= 3) {
+    if (rs.facilities.includes('inn'))      tabs.push({ id:'inn',    label:'🏨 Inn' });
+    if (rs.facilities.includes('workshop')) tabs.push({ id:'tech',   label:'⚙️ Workshop' });
+    if (rs.facilities.includes('stable'))   tabs.push({ id:'stable', label:'🐴 Stable' });
+    if (rs.facilities.includes('relic'))    tabs.push({ id:'relic',  label:'🏺 Relic' });
+    if (rs.facilities.includes('shrine'))   tabs.push({ id:'shrine', label:'🔮 Shrine' });
+  }
+  tabBar.innerHTML = tabs.map(t =>
+    `<button class="nav-btn" onclick="switchRuinsTab('${t.id}')">${t.label}</button>`
+  ).join('');
+
+  switchRuinsTab('main');
+}
+
+function renderRuinsMain() {
+  const key = getRuinsKey();
+  const rd = RUINS_DATA[key];
+  const rs = getRuinsState();
+  const tab = document.getElementById('ruins-tab-main');
+  if (!rd) {
+    tab.innerHTML = `<div style="color:var(--dim);font-size:16px">Nothing of note here.</div>`;
+    return;
+  }
+  const el = ELEMENTS[rd.bossId === 'stonewarden' ? 'earth' : 'shadow'];
+
+  if (!rs.bossDefeated) {
+    // Pre-boss view
+    tab.innerHTML = `
+      <div style="text-align:center;padding:20px 0 10px">
+        <div style="font-size:64px;margin-bottom:8px">${rd.bossEmoji}</div>
+        <div style="font-size:24px;color:${el.color};margin-bottom:6px">${rd.bossName}</div>
+        <div style="font-size:15px;color:var(--dim);margin-bottom:6px">Tier ${rd.tier} Boss · Lv.${rd.bossLevel}</div>
+        <div style="font-size:15px;color:#aaa;margin-bottom:20px;font-style:italic">"${rd.flavorText}"</div>
+        <div style="font-size:14px;color:var(--dim);margin-bottom:16px;background:#0a0a0a;border:1px solid #222;border-radius:8px;padding:12px">
+          <div style="color:var(--gold);font-size:15px;margin-bottom:8px">⚔ Victory Rewards</div>
+          <div>💰 ${rd.rewardGold}g</div>
+          <div>${rd.bossEmoji} ${rd.bossName} joins your party</div>
+          <div>✨ Rare recruit: ${MONSTER_TYPES.find(m=>m.id===rd.rewardRecruit)?.emoji} ${MONSTER_TYPES.find(m=>m.id===rd.rewardRecruit)?.name}</div>
+          <div>${TECH_ITEMS.find(t=>t.id===rd.rewardItem)?.emoji} ${TECH_ITEMS.find(t=>t.id===rd.rewardItem)?.name} (rare tech)</div>
+        </div>
+        <button onclick="challengeBoss()" style="background:#1a0818;border:2px solid ${el.color};color:${el.color};font-family:'VT323',monospace;font-size:22px;padding:12px 32px;border-radius:8px;cursor:pointer;width:100%;max-width:300px">
+          ⚔ Challenge ${rd.bossName}
+        </button>
+      </div>`;
+    return;
+  }
+
+  if (rs.rebuildStep < 3) {
+    // Rebuild quest view
+    const step = rd.rebuildSteps[rs.rebuildStep];
+    const resCost = Object.entries(step.resourceCost);
+    const canAffordGold = STATE.gold >= step.goldCost;
+    const canAffordRes  = resCost.every(([el, qty]) => (STATE.resources[el]||0) >= qty);
+    const canAffordMin  = step.mineralCost === 0 || STATE.inventory.filter(i => MINERAL_TYPES.find(m=>m.id===i.id)).length >= step.mineralCost;
+    const canAfford = canAffordGold && canAffordRes && canAffordMin;
+    const progressHtml = rd.rebuildSteps.map((s, i) => {
+      const done = i < rs.rebuildStep;
+      const active = i === rs.rebuildStep;
+      return `<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;margin-bottom:4px;border-radius:6px;border:1px solid ${done?'#2aff7a':active?el.color:'#222'};background:${done?'#0a1a0a':active?el.bg:'#0a0a0a'}">
+        <span style="font-size:18px">${done?'✅':active?'🔨':'○'}</span>
+        <span style="color:${done?'#2aff7a':active?el.color:'#555'};font-size:16px">${s.label}</span>
+      </div>`;
+    }).join('');
+    const resCostHtml = resCost.map(([elKey, qty]) => {
+      const r = ELEMENTAL_RESOURCES[elKey];
+      const have = STATE.resources[elKey]||0;
+      const ok = have >= qty;
+      return `<span style="color:${ok?ELEMENTS[elKey].color:'#ff3a3a'};margin-right:8px">${r.emoji}${qty}${ok?'':` (${have})`}</span>`;
+    }).join('');
+
+    tab.innerHTML = `
+      <div style="font-size:14px;color:var(--dim);margin-bottom:14px">The boss has been defeated. Rebuild this ruin into a stronghold.</div>
+      <div style="margin-bottom:16px">${progressHtml}</div>
+      <div style="background:#0a0a0a;border:1px solid ${el.color}44;border-radius:8px;padding:14px;margin-bottom:14px">
+        <div style="color:${el.color};font-size:17px;margin-bottom:8px">🔨 ${step.label}</div>
+        <div style="font-size:14px;color:var(--dim);margin-bottom:6px">Cost:</div>
+        <div style="font-size:15px;margin-bottom:4px;color:${canAffordGold?'var(--gold)':'#ff3a3a'}">💰 ${step.goldCost}g ${canAffordGold?'':` (have ${STATE.gold}g)`}</div>
+        ${resCostHtml ? `<div style="font-size:15px;margin-bottom:4px">${resCostHtml}</div>` : ''}
+        ${step.mineralCost > 0 ? `<div style="font-size:15px;color:${canAffordMin?'var(--text)':'#ff3a3a'}">⬛ ${step.mineralCost}x any mineral ${canAffordMin?'':` (have ${STATE.inventory.filter(i=>MINERAL_TYPES.find(m=>m.id===i.id)).length})`}</div>` : ''}
+      </div>
+      <button onclick="doRebuildStep()" ${canAfford?'':'disabled'}
+        style="width:100%;background:${canAfford?el.bg:'#111'};border:2px solid ${canAfford?el.color:'#333'};color:${canAfford?el.color:'#555'};font-family:'VT323',monospace;font-size:20px;padding:10px;border-radius:8px;cursor:${canAfford?'pointer':'not-allowed'}">
+        ${canAfford ? `🔨 ${step.label}` : 'Not enough resources'}
+      </button>`;
+    return;
+  }
+
+  // Fully rebuilt — base building view
+  const builtFacilities = rs.facilities;
+  const maxFacilities = 3;
+  const availableToBuild = RUIN_FACILITIES.filter(f => !builtFacilities.includes(f.id));
+  const facilityCards = availableToBuild.map(f => {
+    const resCost = Object.entries(f.resourceCost);
+    const canAffordGold = STATE.gold >= f.goldCost;
+    const canAffordRes  = resCost.every(([elKey, qty]) => (STATE.resources[elKey]||0) >= qty);
+    const canAfford = canAffordGold && canAffordRes;
+    const full = builtFacilities.length >= maxFacilities;
+    const costHtml = resCost.map(([elKey, qty]) => {
+      const r = ELEMENTAL_RESOURCES[elKey];
+      const have = STATE.resources[elKey]||0;
+      return `<span style="color:${have>=qty?ELEMENTS[elKey].color:'#ff3a3a'};margin-right:6px">${r.emoji}${qty}</span>`;
+    }).join('');
+    return `<div class="panel-box" style="margin-bottom:8px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="flex:1">
+          <div style="font-size:18px;color:var(--text)">${f.label}</div>
+          <div style="font-size:13px;color:var(--dim)">${f.desc}</div>
+          <div style="font-size:14px;margin-top:4px">
+            <span style="color:${canAffordGold?'var(--gold)':'#ff3a3a'};margin-right:8px">💰${f.goldCost}g</span>${costHtml}
+          </div>
+        </div>
+        <button onclick="buildFacility('${f.id}')" ${(!canAfford||full)?'disabled':''}
+          style="background:${canAfford&&!full?'#0a1a10':'#111'};border:1px solid ${canAfford&&!full?'var(--accent)':'#333'};color:${canAfford&&!full?'var(--accent)':'#555'};font-family:'VT323',monospace;font-size:16px;padding:6px 12px;border-radius:5px;cursor:${canAfford&&!full?'pointer':'not-allowed'}">
+          Build
+        </button>
+      </div>
+    </div>`;
+  }).join('') || '<div style="color:var(--dim);font-size:15px">All available facilities built.</div>';
+
+  const builtList = builtFacilities.length === 0
+    ? '<div style="color:var(--dim);font-size:14px">No facilities yet.</div>'
+    : builtFacilities.map(id => {
+        const f = RUIN_FACILITIES.find(x => x.id === id);
+        return `<div style="font-size:15px;color:#2aff7a;margin-bottom:3px">✅ ${f?.label || id}</div>`;
+      }).join('');
+
+  tab.innerHTML = `
+    <div style="font-size:14px;color:#2aff7a;margin-bottom:12px">✅ Ruin fully rebuilt! Choose up to ${maxFacilities} facilities to construct.</div>
+    <div style="background:#0a0a0a;border:1px solid #222;border-radius:8px;padding:10px;margin-bottom:14px">
+      <div style="font-size:13px;color:var(--dim);margin-bottom:6px">BUILT (${builtFacilities.length}/${maxFacilities})</div>
+      ${builtList}
+    </div>
+    ${builtFacilities.length < maxFacilities ? `
+      <div style="font-size:14px;color:var(--accent);letter-spacing:2px;margin-bottom:8px">BUILD FACILITY</div>
+      ${facilityCards}
+    ` : '<div style="color:var(--dim);font-size:15px">Maximum facilities reached (3/3).</div>'}`;
+}
+
+function challengeBoss() {
+  const key = getRuinsKey();
+  const rd = RUINS_DATA[key];
+  if (!rd) return;
+  const rs = getRuinsState();
+  if (rs.bossDefeated) return;
+  // Build boss team (3 monsters scaled to boss level)
+  const bossType = MONSTER_TYPES.find(m => m.id === rd.bossId);
+  const boss = makeMonster(rd.bossId, rd.bossLevel);
+  // Add 2 escort monsters (wild monsters from ruins tile, half boss level)
+  const escortPool = TILE_DATA.ruins.monsters;
+  const escortLevel = Math.max(1, Math.floor(rd.bossLevel * 0.6));
+  const escort1 = makeMonster(escortPool[Math.floor(Math.random()*escortPool.length)], escortLevel);
+  const escort2 = makeMonster(escortPool[Math.floor(Math.random()*escortPool.length)], escortLevel);
+  STATE.battleEnemies = [boss, escort1, escort2];
+  STATE.encounter = { type: 'boss', key, rd, rs };
+  startBattle();
+}
+
+function onBossDefeated(key) {
+  const rd = RUINS_DATA[key];
+  const rs = STATE.ruins[key];
+  if (!rd || !rs || rs.bossDefeated) return;
+  rs.bossDefeated = true;
+
+  // Gold reward
+  STATE.gold += rd.rewardGold;
+
+  // Rare tech item
+  const rewardTech = TECH_ITEMS.find(t => t.id === rd.rewardItem);
+  if (rewardTech) STATE.inventory.push({ ...rewardTech });
+
+  // Boss joins party/bench
+  const bossType = MONSTER_TYPES.find(m => m.id === rd.bossId);
+  if (bossType) {
+    const bossMon = makeMonster(rd.bossId, rd.bossLevel);
+    if (STATE.party.length < 6) STATE.party.push(bossMon);
+    else STATE.bench.push(bossMon);
+  }
+
+  // Rare recruitable monster available
+  const recruitType = MONSTER_TYPES.find(m => m.id === rd.rewardRecruit);
+  const recruitMon = recruitType ? makeMonster(rd.rewardRecruit, Math.max(1, rd.bossLevel - 5)) : null;
+
+  updateGold();
+  renderPartyList();
+
+  // Show victory overlay
+  const overlay = document.createElement('div');
+  overlay.id = 'use-item-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:#000000cc;z-index:300;display:flex;align-items:center;justify-content:center;';
+  const box = document.createElement('div');
+  box.style.cssText = 'background:var(--panel);border:2px solid var(--gold);border-radius:12px;padding:24px;max-width:92vw;font-family:"VT323",monospace;text-align:center;';
+  box.innerHTML = `
+    <div style="font-size:40px;margin-bottom:6px">${rd.bossEmoji}</div>
+    <div style="font-size:26px;color:var(--gold);margin-bottom:4px">${rd.bossName} Defeated!</div>
+    <div style="font-size:16px;color:var(--dim);margin-bottom:16px">The ruin falls silent. You may now rebuild.</div>
+    <div style="background:#0a0a0a;border:1px solid #2a2a0a;border-radius:8px;padding:12px;margin-bottom:16px;text-align:left">
+      <div style="color:var(--gold);font-size:15px;margin-bottom:8px">REWARDS</div>
+      <div style="font-size:16px;margin-bottom:4px">💰 +${rd.rewardGold}g</div>
+      <div style="font-size:16px;margin-bottom:4px">${rewardTech?.emoji} ${rewardTech?.name} added to inventory</div>
+      <div style="font-size:16px;margin-bottom:4px">${rd.bossEmoji} ${rd.bossName} joined your ${STATE.party.length <= 6 ? 'party' : 'bench'}!</div>
+      ${recruitMon ? `<div style="font-size:14px;color:#a3e635;margin-top:8px">✨ ${recruitMon.emoji} ${recruitMon.name} can now be recruited here.</div>` : ''}
+    </div>
+    ${recruitMon ? `<button onclick="recruitBossReward('${key}','${rd.rewardRecruit}',${rd.bossLevel})" style="width:100%;margin-bottom:8px;background:#0a1a10;border:1px solid var(--accent);color:var(--accent);font-family:'VT323',monospace;font-size:18px;padding:8px;border-radius:6px;cursor:pointer">
+      + Recruit ${recruitMon.emoji} ${recruitMon.name}
+    </button>` : ''}
+    <button onclick="document.getElementById('use-item-overlay').remove();renderRuins()" style="width:100%;background:#1a0a00;border:1px solid var(--gold);color:var(--gold);font-family:'VT323',monospace;font-size:18px;padding:8px;border-radius:6px;cursor:pointer">
+      Continue
+    </button>`;
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+}
+
+function recruitBossReward(key, typeId, bossLevel) {
+  if (STATE.party.length + STATE.bench.length >= 12) { toast('No room in party or bench!'); return; }
+  const mon = makeMonster(typeId, Math.max(1, bossLevel - 5));
+  if (STATE.party.length < 6) STATE.party.push(mon);
+  else STATE.bench.push(mon);
+  renderPartyList();
+  toast(`${mon.emoji} ${mon.name} joined!`);
+  // Replace recruit button with confirmation
+  const btn = document.querySelector(`button[onclick*="recruitBossReward"]`);
+  if (btn) { btn.textContent = `✅ ${mon.emoji} ${mon.name} recruited!`; btn.disabled = true; }
+}
+
+function doRebuildStep() {
+  const key = getRuinsKey();
+  const rd = RUINS_DATA[key];
+  const rs = getRuinsState();
+  if (!rd || !rs.bossDefeated || rs.rebuildStep >= 3) return;
+  const step = rd.rebuildSteps[rs.rebuildStep];
+  if (STATE.gold < step.goldCost) return;
+  const resCost = Object.entries(step.resourceCost);
+  if (!resCost.every(([el, qty]) => (STATE.resources[el]||0) >= qty)) return;
+  const mineralItems = STATE.inventory.filter(i => MINERAL_TYPES.find(m => m.id === i.id));
+  if (step.mineralCost > 0 && mineralItems.length < step.mineralCost) return;
+
+  STATE.gold -= step.goldCost;
+  resCost.forEach(([el, qty]) => { STATE.resources[el] -= qty; });
+  if (step.mineralCost > 0) {
+    let toRemove = step.mineralCost;
+    STATE.inventory = STATE.inventory.filter(i => {
+      if (toRemove > 0 && MINERAL_TYPES.find(m => m.id === i.id)) { toRemove--; return false; }
+      return true;
+    });
+  }
+  rs.rebuildStep++;
+  updateGold();
+  toast(rs.rebuildStep >= 3 ? '🏛 Ruin fully rebuilt!' : `🔨 ${step.label} complete!`);
+  renderRuins();
+}
+
+function buildFacility(facilityId) {
+  const key = getRuinsKey();
+  const rs = getRuinsState();
+  if (rs.facilities.length >= 3 || rs.facilities.includes(facilityId)) return;
+  const f = RUIN_FACILITIES.find(x => x.id === facilityId);
+  if (!f) return;
+  if (STATE.gold < f.goldCost) return;
+  const resCost = Object.entries(f.resourceCost);
+  if (!resCost.every(([el, qty]) => (STATE.resources[el]||0) >= qty)) return;
+  STATE.gold -= f.goldCost;
+  resCost.forEach(([el, qty]) => { STATE.resources[el] -= qty; });
+  rs.facilities.push(facilityId);
+  updateGold();
+  toast(`${f.label} built!`);
+  renderRuins();
+}
+
+function renderRelicShop() {
+  const key = getRuinsKey();
+  const rd = RUINS_DATA[key];
+  const rs = getRuinsState();
+  const tab = document.getElementById('ruins-tab-relic');
+  if (!tab) return;
+  const tier = rd?.tier || 1;
+  const stock = RELIC_STOCK[tier] || [];
+  const view = rs.relicView || 'buy';
+
+  const toggleBar = `<div style="display:flex;gap:8px;margin-bottom:16px">
+    <button onclick="setRelicView('buy')" style="flex:1;font-family:'VT323',monospace;font-size:18px;padding:7px 0;border-radius:5px;cursor:pointer;background:${view==='buy'?'#0a1a10':'transparent'};border:1px solid ${view==='buy'?'var(--accent)':'#333'};color:${view==='buy'?'var(--accent)':'var(--dim)'}">🛒 Buy</button>
+    <button onclick="setRelicView('sell')" style="flex:1;font-family:'VT323',monospace;font-size:18px;padding:7px 0;border-radius:5px;cursor:pointer;background:${view==='sell'?'#1a0800':'transparent'};border:1px solid ${view==='sell'?'#ff9a6a':'#333'};color:${view==='sell'?'#ff9a6a':'var(--dim)'}">💰 Sell</button>
+  </div>`;
+
+  if (view === 'buy') {
+    const cards = stock.map((item, idx) => {
+      const buyPrice = Math.ceil(item.value * 1.5);
+      const canAfford = STATE.gold >= buyPrice;
+      const itemEl = item.element ? ELEMENTS[item.element] : null;
+      return `<div class="shop-card" style="border-color:${itemEl?itemEl.color:'var(--gold)'}">
+        <div class="sc-emoji">${item.emoji}</div>
+        <div class="sc-name" style="color:${itemEl?itemEl.color:'var(--gold)'}">${item.name}</div>
+        <div class="sc-desc">${item.desc || item.effect || ''}</div>
+        <div style="font-size:13px;color:#a3e635;margin:3px 0">${item.type==='tech'?`+${item.statBoost} ${item.statStat.toUpperCase().replace('MAXHP','Max HP')}`:item.effect||''}</div>
+        <div style="font-size:12px;color:var(--dim);margin-bottom:6px">${item.rarity}</div>
+        <button class="buy-btn" ${canAfford?'':'disabled'} onclick="buyRelicItem(${idx})"
+          style="border-color:${canAfford?(itemEl?itemEl.color:'var(--gold)'):'#333'};color:${canAfford?(itemEl?itemEl.color:'var(--gold)'):'#555'}">
+          💰 ${buyPrice}g
+        </button>
+      </div>`;
+    }).join('');
+    tab.innerHTML = `${toggleBar}<div style="font-size:18px;color:var(--dim);margin-bottom:10px">Rare relics recovered from the ruins. 💰 ${STATE.gold}g</div><div class="shop-grid">${cards}</div>`;
+  } else {
+    // Sell view — reuse merchant sell logic
+    const sellItems = STATE.inventory.filter(i => i.value);
+    const sellCards = sellItems.map((item, rawIdx) => {
+      const sp = Math.floor(item.value * 0.6);
+      const rc = item.rarity==='rare'?'var(--gold)':item.rarity==='uncommon'?'var(--shadow-el)':'var(--border)';
+      return `<div class="shop-card" style="border-color:${rc}44">
+        <div class="sc-emoji">${item.emoji}</div>
+        <div class="sc-name" style="color:${rc}">${item.name}</div>
+        <div style="font-size:13px;color:var(--dim);margin-bottom:6px">${item.rarity}</div>
+        <button class="buy-btn" onclick="sellRelicItem(${rawIdx})" style="border-color:#ff9a6a;color:#ff9a6a">💰 Sell ${sp}g</button>
+      </div>`;
+    }).join('') || '<div style="color:var(--dim);font-size:15px">Nothing to sell.</div>';
+    tab.innerHTML = `${toggleBar}<div style="font-size:18px;color:var(--dim);margin-bottom:10px">Sell items for 60% of value. 💰 ${STATE.gold}g</div><div class="shop-grid">${sellCards}</div>`;
+  }
+}
+
+function setRelicView(v) {
+  const rs = getRuinsState();
+  rs.relicView = v;
+  renderRelicShop();
+}
+
+function buyRelicItem(stockIdx) {
+  const key = getRuinsKey();
+  const rd = RUINS_DATA[key];
+  const tier = rd?.tier || 1;
+  const item = RELIC_STOCK[tier]?.[stockIdx];
+  if (!item) return;
+  const buyPrice = Math.ceil(item.value * 1.5);
+  if (STATE.gold < buyPrice) return;
+  STATE.gold -= buyPrice;
+  STATE.inventory.push({ ...item });
+  updateGold();
+  toast(`Bought ${item.emoji} ${item.name}!`);
+  renderRelicShop();
+}
+
+function sellRelicItem(rawIdx) {
+  const item = STATE.inventory[rawIdx];
+  if (!item || !item.value) return;
+  const sp = Math.floor(item.value * 0.6);
+  STATE.gold += sp;
+  STATE.inventory.splice(rawIdx, 1);
+  updateGold();
+  toast(`Sold ${item.emoji} ${item.name} for ${sp}g.`);
+  renderRelicShop();
+}
+
+function renderMonsterShrine() {
+  const key = getRuinsKey();
+  const rd = RUINS_DATA[key];
+  const tab = document.getElementById('ruins-tab-shrine');
+  if (!tab) return;
+  const tier = rd?.tier || 1;
+  const pool = SHRINE_MONSTERS[tier] || [];
+  const cards = pool.map(typeId => {
+    const t = MONSTER_TYPES.find(m => m.id === typeId);
+    if (!t) return '';
+    const el = ELEMENTS[t.element];
+    const level = Math.max(1, (rd?.bossLevel || 10) - 5);
+    const cost = Math.floor((t.base.hp + t.base.atk) * 3);
+    const canAfford = STATE.gold >= cost;
+    const full = STATE.party.length + STATE.bench.length >= 12;
+    return `<div class="shop-card" style="border-color:${el.color}">
+      <div class="sc-emoji">${t.emoji}</div>
+      <div class="sc-name" style="color:${el.color}">${t.name}</div>
+      <div class="sc-desc">${t.desc}</div>
+      <div style="font-size:13px;color:var(--dim);margin-bottom:4px">Lv.${level} · ${el.icon} ${t.element}</div>
+      <button class="buy-btn" ${(canAfford&&!full)?'':'disabled'} onclick="recruitShrine('${typeId}',${level},${cost})"
+        style="border-color:${(canAfford&&!full)?el.color:'#333'};color:${(canAfford&&!full)?el.color:'#555'}">
+        💰 ${cost}g
+      </button>
+    </div>`;
+  }).join('');
+  tab.innerHTML = `
+    <div style="font-size:18px;color:var(--dim);margin-bottom:10px">Recruit wild monsters through the power of this ancient shrine. 💰 ${STATE.gold}g</div>
+    <div class="shop-grid">${cards}</div>`;
+}
+
+function recruitShrine(typeId, level, cost) {
+  if (STATE.gold < cost) return;
+  if (STATE.party.length + STATE.bench.length >= 12) { toast('No room!'); return; }
+  STATE.gold -= cost;
+  const mon = makeMonster(typeId, level);
+  if (STATE.party.length < 6) STATE.party.push(mon);
+  else STATE.bench.push(mon);
+  updateGold();
+  renderPartyList();
+  toast(`${mon.emoji} ${mon.name} joined!`);
+  renderMonsterShrine();
+}
+
+
+let activeTownTab = 0;
+function switchTownTab(n) {
+  activeTownTab = n;
+  document.getElementById('town-tab-heal').style.display    = n===0?'block':'none';
+  document.getElementById('town-tab-recruit').style.display = n===1?'block':'none';
+  document.getElementById('town-tab-sell').style.display    = n===2?'block':'none';
+  document.getElementById('town-tab-tech').style.display    = n===3?'block':'none';
+}
+
+function renderWorkshopInto(tabId) {
+  const tab = document.getElementById(tabId);
+  if (!tab) return;
+  const resSummary = Object.entries(STATE.resources).map(([el, qty]) => {
+    const r = ELEMENTAL_RESOURCES[el];
+    const elData = ELEMENTS[el];
+    return `<span style="margin-right:10px;color:${elData.color}">${r.emoji} ${qty}</span>`;
+  }).join('');
+
+  const techCards = TECH_RECIPES.map((recipe, idx) => {
+    const tech = TECH_ITEMS.find(t => t.id === recipe.itemId);
+    if (!tech) return '';
+    const tel = ELEMENTS[tech.element];
+    const mineralItem = MINERAL_TYPES.find(m => m.id === recipe.mineral);
+    const mineralInInv = STATE.inventory.filter(i => i.id === recipe.mineral).length;
+    const hasResources = Object.entries(recipe.cost).every(([el, qty]) => (STATE.resources[el]||0) >= qty);
+    const hasMinerals  = mineralInInv >= recipe.mineralQty;
+    const canCraft = hasResources && hasMinerals;
+    const stackCount = STATE.inventory.filter(i => i.id === tech.id).length;
+    const stackFull = stackCount >= 10;
+    const craftable = canCraft && !stackFull;
+    const costHtml = Object.entries(recipe.cost).map(([el, qty]) => {
+      const r = ELEMENTAL_RESOURCES[el];
+      const elData = ELEMENTS[el];
+      const have = STATE.resources[el] || 0;
+      const ok = have >= qty;
+      return `<span style="color:${ok?elData.color:'#ff3a3a'};margin-right:6px">${r.emoji}${qty}${ok?'':` (${have})`}</span>`;
+    }).join('');
+    const mineralHtml = mineralItem
+      ? `<span style="color:${hasMinerals?'var(--gold)':'#ff3a3a'};margin-right:6px">${mineralItem.emoji}${recipe.mineralQty}${hasMinerals?'':` (${mineralInInv})`}</span>`
+      : '';
+    return `<div class="shop-card" style="border-color:${tel.color}">
+      <div class="sc-emoji">${tech.emoji}</div>
+      <div class="sc-name" style="color:${tel.color}">${tech.name}</div>
+      <div class="sc-desc">${tech.desc}</div>
+      <div style="font-size:13px;color:#a3e635;margin:3px 0">+${tech.statBoost} ${tech.statStat.toUpperCase().replace('MAXHP','Max HP')} · 3 power slots</div>
+      <div style="font-size:12px;color:var(--dim);margin-bottom:4px">${recipe.label} · ${tech.rarity}</div>
+      <div style="font-size:13px;color:${stackFull?'#ff3a3a':stackCount>0?'var(--gold)':'var(--dim)'};margin-bottom:4px">
+        ${stackFull ? '⚠ Stack full (10/10)' : stackCount > 0 ? `Owned: ${stackCount}/10` : 'Not owned'}
+      </div>
+      <div style="font-size:14px;margin-bottom:6px">${costHtml}${mineralHtml}</div>
+      <button class="buy-btn" ${craftable?'':'disabled'} onclick="craftTech(${idx})"
+        style="border-color:${craftable?tel.color:'#333'};color:${craftable?tel.color:'#555'}">
+        ${stackFull ? 'Stack Full' : 'Craft Tech'}
+      </button>
+    </div>`;
+  }).join('');
+
+  const compCards = COMPONENT_RECIPES.map((recipe, idx) => {
+    const comp = COMPONENT_TYPES.find(c => c.id === recipe.itemId);
+    if (!comp) return '';
+    const mineralItem = MINERAL_TYPES.find(m => m.id === recipe.mineral);
+    const mineralInInv = STATE.inventory.filter(i => i.id === recipe.mineral).length;
+    const hasResources = Object.entries(recipe.cost).every(([el, qty]) => (STATE.resources[el]||0) >= qty);
+    const hasMinerals  = mineralInInv >= recipe.mineralQty;
+    const canCraft = hasResources && hasMinerals;
+    const stackCount = STATE.inventory.filter(i => i.id === comp.id).length;
+    const stackFull = stackCount >= 10;
+    const craftable = canCraft && !stackFull;
+    const costHtml = Object.entries(recipe.cost).map(([el, qty]) => {
+      const r = ELEMENTAL_RESOURCES[el];
+      const elData = ELEMENTS[el];
+      const have = STATE.resources[el] || 0;
+      const ok = have >= qty;
+      return `<span style="color:${ok?elData.color:'#ff3a3a'};margin-right:6px">${r.emoji}${qty}${ok?'':` (${have})`}</span>`;
+    }).join('');
+    const mineralHtml = mineralItem
+      ? `<span style="color:${hasMinerals?'var(--gold)':'#ff3a3a'};margin-right:6px">${mineralItem.emoji}${recipe.mineralQty}${hasMinerals?'':` (${mineralInInv})`}</span>`
+      : '';
+    return `<div class="shop-card" style="border-color:#2a3a4a">
+      <div class="sc-emoji">${comp.emoji}</div>
+      <div class="sc-name" style="color:var(--text)">${comp.name}</div>
+      <div style="font-size:13px;color:#a3e635;margin:3px 0">${comp.effect}</div>
+      <div style="font-size:12px;color:var(--dim);margin-bottom:4px">${recipe.label}</div>
+      <div style="font-size:13px;color:${stackFull?'#ff3a3a':stackCount>0?'var(--gold)':'var(--dim)'};margin-bottom:4px">
+        ${stackFull ? '⚠ Stack full (10/10)' : stackCount > 0 ? `Owned: ${stackCount}/10` : 'Not owned'}
+      </div>
+      <div style="font-size:14px;margin-bottom:6px">${costHtml}${mineralHtml}</div>
+      <button class="buy-btn" ${craftable?'':'disabled'} onclick="craftComponent(${idx})"
+        style="border-color:${craftable?'#2ab8ff':'#333'};color:${craftable?'#2ab8ff':'#555'}">
+        ${stackFull ? 'Stack Full' : 'Craft'}
+      </button>
+    </div>`;
+  }).join('');
+
+  tab.innerHTML = `
+    <div style="font-size:18px;color:var(--dim);margin-bottom:6px">Craft Tech gear and Components to augment your monsters.</div>
+    <div style="font-size:15px;margin-bottom:14px;background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:7px 10px">
+      <span style="color:var(--dim);font-size:13px;letter-spacing:1px;margin-right:8px">RESOURCES:</span>${resSummary}
+    </div>
+    <div style="font-size:14px;color:var(--accent);letter-spacing:2px;margin-bottom:8px">TECH GEAR</div>
+    <div class="shop-grid" style="margin-bottom:18px">${techCards}</div>
+    <div style="font-size:14px;color:#2ab8ff;letter-spacing:2px;margin-bottom:8px">COMPONENTS</div>
+    <div class="shop-grid">${compCards}</div>`;
+}
+
+function renderTechTab() {
+  renderWorkshopInto('town-tab-tech');
+}
+
+function craftTech(recipeIdx) {
+  const recipe = TECH_RECIPES[recipeIdx];
+  if (!recipe) return;
+  const hasResources = Object.entries(recipe.cost).every(([el, qty]) => (STATE.resources[el]||0) >= qty);
+  const mineralInInv = STATE.inventory.filter(i => i.id === recipe.mineral).length;
+  const hasMinerals  = mineralInInv >= recipe.mineralQty;
+  if (!hasResources || !hasMinerals) return;
+  const stackCount = STATE.inventory.filter(i => i.id === recipe.itemId).length;
+  if (stackCount >= 10) { toast('Stack full! (max 10)'); return; }
+  Object.entries(recipe.cost).forEach(([el, qty]) => { STATE.resources[el] -= qty; });
+  let toRemove = recipe.mineralQty;
+  STATE.inventory = STATE.inventory.filter(i => {
+    if (i.id === recipe.mineral && toRemove > 0) { toRemove--; return false; }
+    return true;
+  });
+  const tech = TECH_ITEMS.find(t => t.id === recipe.itemId);
+  STATE.inventory.push({ ...tech, slots: [null, null, null] });
+  toast(`Crafted ${tech.emoji} ${tech.name}!`);
+  renderTechTab();
+  renderRanchTechTab();
+}
+
+function craftComponent(recipeIdx) {
+  const recipe = COMPONENT_RECIPES[recipeIdx];
+  if (!recipe) return;
+  const hasResources = Object.entries(recipe.cost).every(([el, qty]) => (STATE.resources[el]||0) >= qty);
+  const mineralInInv = STATE.inventory.filter(i => i.id === recipe.mineral).length;
+  const hasMinerals  = mineralInInv >= recipe.mineralQty;
+  if (!hasResources || !hasMinerals) return;
+  const stackCount = STATE.inventory.filter(i => i.id === recipe.itemId).length;
+  if (stackCount >= 10) { toast('Stack full! (max 10)'); return; }
+  Object.entries(recipe.cost).forEach(([el, qty]) => { STATE.resources[el] -= qty; });
+  let toRemove = recipe.mineralQty;
+  STATE.inventory = STATE.inventory.filter(i => {
+    if (i.id === recipe.mineral && toRemove > 0) { toRemove--; return false; }
+    return true;
+  });
+  const comp = COMPONENT_TYPES.find(c => c.id === recipe.itemId);
+  STATE.inventory.push({ ...comp });
+  toast(`Crafted ${comp.emoji} ${comp.name}!`);
+  renderTechTab();
+  renderRanchTechTab();
+}
+
+function renderMerchantTab() {
+  const sell = document.getElementById('town-tab-sell');
+  const view = STATE.merchantView;
+  const tKey = `${STATE.pos.r},${STATE.pos.c}`;
+  const townStock = STATE.merchantStock[tKey] || [];
+
+  const toggleBar = `
+    <div style="display:flex;gap:8px;margin-bottom:16px">
+      <button onclick="setMerchantView('buy')" style="flex:1;font-family:'VT323',monospace;font-size:18px;padding:7px 0;border-radius:5px;cursor:pointer;
+        background:${view==='buy'?'#0a1a2a':'#0a0a0a'};border:2px solid ${view==='buy'?'#2ab8ff':'#333'};color:${view==='buy'?'#2ab8ff':'#555'}">
+        🛒 BUY
+      </button>
+      <button onclick="setMerchantView('sell')" style="flex:1;font-family:'VT323',monospace;font-size:18px;padding:7px 0;border-radius:5px;cursor:pointer;
+        background:${view==='sell'?'#0a2a10':'#0a0a0a'};border:2px solid ${view==='sell'?'var(--accent)':'#333'};color:${view==='sell'?'var(--accent)':'#555'}">
+        💰 SELL
+      </button>
+    </div>`;
+
+  if (view === 'sell') {
+    if (STATE.inventory.length === 0) {
+      sell.innerHTML = toggleBar + `<div style="font-size:18px;color:var(--dim)">You have nothing to sell.</div>`;
+      return;
+    }
+    sell.innerHTML = toggleBar + `
+      <div style="font-size:15px;color:var(--dim);margin-bottom:14px">Selling at 60% value · ${STATE.inventory.length} item${STATE.inventory.length!==1?'s':''}</div>
+      <div class="shop-grid">
+        ${STATE.inventory.map((item, idx) => {
+          const rc = item.rarity==='rare'?'var(--gold)':item.rarity==='uncommon'?'var(--shadow-el)':'var(--border)';
+          const sp = Math.floor(item.value * 0.6);
+          return `<div class="shop-card" style="border-color:${rc}">
+            <div class="sc-emoji">${item.emoji}</div>
+            <div class="sc-name" style="color:${rc}">${item.name}</div>
+            <div class="sc-desc">${item.effect}</div>
+            <div style="font-size:13px;color:var(--dim);margin-bottom:6px">${item.rarity}</div>
+            <button class="buy-btn" onclick="sellItem(${idx})" style="border-color:#ffd84a;color:#ffd84a">Sell · ${sp}g</button>
+          </div>`;
+        }).join('')}
+      </div>`;
+  } else {
+    // Buy view
+    const t = parseTime(STATE.time);
+    const weeksLeft = TIME.WEEKS_PER_MONTH - t.week;
+    const nextRestock = weeksLeft <= 0
+      ? 'Restocking next month!'
+      : weeksLeft === 1 ? '⚠ Restocking at end of this week!' : `Restocks in ${weeksLeft} week${weeksLeft!==1?'s':''}`;
+
+    if (townStock.length === 0) {
+      sell.innerHTML = toggleBar + `<div style="font-size:18px;color:var(--dim)">The merchant has no stock right now.</div>`;
+      return;
+    }
+    sell.innerHTML = toggleBar + `
+      <div style="font-size:15px;color:var(--dim);margin-bottom:4px">Browse this month's wares.</div>
+      <div style="font-size:13px;color:${weeksLeft<=1?'#ffd84a':'var(--dim)'};margin-bottom:14px">${nextRestock}</div>
+      <div class="shop-grid">
+        ${townStock.map((item, idx) => {
+          const rc = item.rarity==='rare'?'var(--gold)':item.rarity==='uncommon'?'var(--shadow-el)':'var(--border)';
+          const canBuy = STATE.gold >= item.buyPrice;
+          return `<div class="shop-card" style="border-color:${rc}">
+            <div class="sc-emoji">${item.emoji}</div>
+            <div class="sc-name" style="color:${rc}">${item.name}</div>
+            <div class="sc-desc">${item.effect}</div>
+            <div style="font-size:13px;color:var(--dim);margin-bottom:6px">${item.rarity}</div>
+            <button class="buy-btn" ${canBuy?'':'disabled'} onclick="merchantBuy(${idx})"
+              style="border-color:${canBuy?'#2ab8ff':'#333'};color:${canBuy?'#2ab8ff':'#555'}">
+              Buy · ${item.buyPrice}g
+            </button>
+          </div>`;
+        }).join('')}
+      </div>`;
+  }
+}
+
+function setMerchantView(v) {
+  STATE.merchantView = v;
+  renderMerchantTab();
+}
+
+function merchantBuy(stockIdx) {
+  const tKey = `${STATE.pos.r},${STATE.pos.c}`;
+  const townStock = STATE.merchantStock[tKey] || [];
+  const item = townStock[stockIdx];
+  if (!item || STATE.gold < item.buyPrice) return;
+  STATE.gold -= item.buyPrice;
+  STATE.inventory.push({ ...item });
+  updateGold();
+  toast(`Bought ${item.emoji} ${item.name} for ${item.buyPrice}g!`);
+  renderMerchantTab();
+}
+
+function renderTown() {
+  const tileName = TILE_NAMES[`${STATE.pos.r},${STATE.pos.c}`];
+  document.getElementById('town-title').textContent = tileName ? `🏙 ${tileName}` : '🏙 TOWN';
+
+  // Heal tab
+  renderInnTab('town-tab-heal', 'townInnRest');
+
+  // Trapper tab
+  document.getElementById('th-tab2').textContent = '🪤 TRAPPER';
+  const shopMons = MONSTER_TYPES.slice(0, SHOP_MONSTER_COUNT);
+  const tKey = `${STATE.pos.r},${STATE.pos.c}`;
+  const specialStock = STATE.trapperInventory[tKey] || [];
+  const specialCards = specialStock.map((entry, idx) => {
+    const t = MONSTER_TYPES.find(x => x.id === entry.typeId);
+    if (!t) return '';
+    const el = ELEMENTS[t.element];
+    const cost = Math.floor((t.base.hp + t.base.atk) * 2.5); // level 3 premium
+    const canBuy = !entry.purchased && STATE.gold >= cost && (STATE.party.length + STATE.bench.length) < 12;
+    return `<div class="shop-card" style="border-color:${el.color};opacity:${entry.purchased?0.45:1}">
+      <div style="font-size:11px;color:var(--gold);letter-spacing:1px;margin-bottom:4px">★ RARE CATCH</div>
+      <div class="sc-emoji">${t.emoji}</div>
+      <div class="sc-name" style="color:${el.color}">${t.name}</div>
+      <div class="sc-desc">${el.icon} ${t.element} · ${t.desc}</div>
+      <div style="font-size:12px;color:#a3e635;margin-bottom:6px">Lv.3 · One-time offer</div>
+      <button class="buy-btn" ${canBuy?'':'disabled'} onclick="recruitSpecial('${tKey}',${idx},${cost})"
+        style="border-color:${entry.purchased?'#333':el.color};color:${entry.purchased?'#555':el.color}">
+        ${entry.purchased ? '✓ Sold' : `Recruit · ${cost}g`}
+      </button>
+    </div>`;
+  }).join('');
+  document.getElementById('town-tab-recruit').innerHTML = `
+    <div style="font-size:18px;color:var(--dim);margin-bottom:14px">Add new monsters to your roster.</div>
+    ${specialCards ? `
+      <div style="font-size:13px;color:var(--gold);letter-spacing:2px;margin-bottom:8px">★ TRAPPER SPECIAL</div>
+      <div class="shop-grid" style="margin-bottom:18px">${specialCards}</div>
+      <div style="font-size:13px;color:var(--dim);letter-spacing:2px;margin-bottom:8px">STANDARD STOCK</div>` : ''}
+    <div class="shop-grid">
+      ${shopMons.map(t=>{
+        const el = ELEMENTS[t.element];
+        const cost = t.base.hp+t.base.atk;
+        const canBuy = STATE.gold>=cost && (STATE.party.length+STATE.bench.length)<12;
+        return `<div class="shop-card" style="border-color:${el.color}">
+          <div class="sc-emoji">${t.emoji}</div>
+          <div class="sc-name" style="color:${el.color}">${t.name}</div>
+          <div class="sc-desc">${el.icon} ${t.element} · ${t.desc}</div>
+          <button class="buy-btn" ${canBuy?'':'disabled'} onclick="recruitMon('${t.id}',${cost})" style="border-color:${el.color}">Recruit · ${cost}g</button>
+        </div>`;
+      }).join('')}
+    </div>`;
+
+  // Sell tab
+  renderMerchantTab();
+
+  // Tech tab (Workshop)
+  renderTechTab();
+
+  // Stable tab rendered on demand via switchTownTab
+  switchTownTab(activeTownTab);
+}
+
+function townInnRest(hours) {
+  doInnRest(hours, renderTown);
+}
+
+function buyItem(itemId) {
+  const all = [...PLANT_TYPES,...MINERAL_TYPES];
+  const item = all.find(x=>x.id===itemId);
+  if (!item||STATE.gold<item.value) return;
+  STATE.gold -= item.value;
+  STATE.inventory.push({...item});
+  updateGold();
+  renderTown();
+  toast(`Bought ${item.emoji} ${item.name}!`);
+}
+
+function sellItem(idx) {
+  const item = STATE.inventory[idx];
+  if (!item) return;
+  const earned = Math.floor(item.value * 0.6);
+  STATE.inventory.splice(idx, 1);
+  STATE.gold += earned;
+  updateGold();
+  renderMerchantTab(); // re-render so the list updates instantly
+  toast(`Sold ${item.emoji} ${item.name} for ${earned}g!`);
+}
+
+function recruitMon(typeId, cost) {
+  if (STATE.gold<cost) return;
+  STATE.gold -= cost;
+  const mon = makeMonster(typeId, 1);
+  if (STATE.party.length<6) STATE.party.push(mon);
+  else STATE.bench.push(mon);
+  updateGold();
+  renderTown();
+  toast(`Recruited ${mon.emoji} ${mon.name}!`);
+}
+
+function recruitSpecial(tKey, idx, cost) {
+  const entry = STATE.trapperInventory[tKey]?.[idx];
+  if (!entry || entry.purchased) return;
+  if (STATE.gold < cost) return;
+  if (STATE.party.length + STATE.bench.length >= 12) return;
+  STATE.gold -= cost;
+  entry.purchased = true;
+  const mon = makeMonster(entry.typeId, 3);
+  if (STATE.party.length < 6) STATE.party.push(mon);
+  else STATE.bench.push(mon);
+  updateGold();
+  renderTown();
+  toast(`Recruited ${mon.emoji} ${mon.name} (Lv.3)!`);
+}
+
+// ════════════════════════════════════════════════════════
+// UTILS
+// ════════════════════════════════════════════════════════
+function updateGold() {
+  document.getElementById('gold-disp').textContent = '💰 '+STATE.gold+'g';
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.innerHTML = `<span>${msg}</span><span onclick="document.getElementById('toast').classList.remove('show');document.getElementById('toast').style.display='none'" style="margin-left:12px;cursor:pointer;opacity:0.7;font-size:16px;vertical-align:middle">✕</span>`;
+  t.style.display = '';
+  t.classList.add('show');
+  clearTimeout(t._hideTimer);
+  t._hideTimer = setTimeout(() => {
+    t.classList.remove('show');
+  }, 2600);
+}
+
+// ════════════════════════════════════════════════════════
+// TIME
+// ════════════════════════════════════════════════════════
+const TIME = { HOURS_PER_DAY:24, DAYS_PER_WEEK:7, WEEKS_PER_MONTH:4, MONTHS_PER_YEAR:12 };
+TIME.HOURS_PER_WEEK  = TIME.HOURS_PER_DAY  * TIME.DAYS_PER_WEEK;
+TIME.HOURS_PER_MONTH = TIME.HOURS_PER_WEEK * TIME.WEEKS_PER_MONTH;
+TIME.HOURS_PER_YEAR  = TIME.HOURS_PER_MONTH * TIME.MONTHS_PER_YEAR;
+
+const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+function parseTime(totalHours) {
+  let h = totalHours;
+  const year   = Math.floor(h / TIME.HOURS_PER_YEAR)  + 1; h %= TIME.HOURS_PER_YEAR;
+  const month  = Math.floor(h / TIME.HOURS_PER_MONTH) + 1; h %= TIME.HOURS_PER_MONTH;
+  const week   = Math.floor(h / TIME.HOURS_PER_WEEK)  + 1; h %= TIME.HOURS_PER_WEEK;
+  const day    = Math.floor(h / TIME.HOURS_PER_DAY)   + 1;
+  const hour   = h % TIME.HOURS_PER_DAY;
+  return { year, month, week, day, hour };
+}
+
+function formatTime(totalHours) {
+  const t = parseTime(totalHours);
+  const ampm = t.hour < 12 ? 'AM' : 'PM';
+  const hr12 = t.hour % 12 || 12;
+  return `Yr ${t.year} · ${MONTH_NAMES[t.month-1]} · Wk ${t.week} · Day ${t.day} · ${hr12}${ampm}`;
+}
+
+function generateMerchantStock() {
+  const TOWN_TYPES = new Set(["town", "shop"]);
+  const mark = item => ({ ...item, buyPrice: Math.ceil(item.value * 1.2) });
+  const pick = (arr, min, max) => {
+    const shuffled = [...arr].sort(() => Math.random() - 0.5);
+    const n = min + Math.floor(Math.random() * (max - min + 1));
+    return shuffled.slice(0, Math.min(n, shuffled.length));
+  };
+
+  for (let r = 0; r < MAP_TILES.length; r++) {
+    for (let c = 0; c < MAP_TILES[r].length; c++) {
+      if (!TOWN_TYPES.has(MAP_TILES[r][c])) continue;
+      const key = `${r},${c}`;
+
+      // Collect available item types from tiles within 2 steps (Manhattan distance)
+      const adjPlants = new Set();
+      const adjMinerals = new Set();
+      for (let dr = -2; dr <= 2; dr++) {
+        for (let dc = -2; dc <= 2; dc++) {
+          if (Math.abs(dr) + Math.abs(dc) > 2 || (dr === 0 && dc === 0)) continue;
+          const ar = r + dr, ac = c + dc;
+          if (ar < 0 || ar >= MAP_TILES.length || ac < 0 || ac >= MAP_TILES[0].length) continue;
+          const td = TILE_DATA[MAP_TILES[ar][ac]];
+          if (!td || td.safe) continue;
+          if (td.plants)   PLANT_TYPES.forEach(p => adjPlants.add(p.id));
+          if (td.minerals) MINERAL_TYPES.forEach(m => adjMinerals.add(m.id));
+        }
+      }
+
+      const eligiblePlants   = PLANT_TYPES.filter(p => adjPlants.has(p.id));
+      const eligibleMinerals = MINERAL_TYPES.filter(m => adjMinerals.has(m.id));
+      const allEligible = [...eligiblePlants, ...eligibleMinerals];
+
+      // If adjacent tiles yield too few eligible items, pad from the full pool
+      const fullPool = [...PLANT_TYPES, ...MINERAL_TYPES];
+      const paddedEligible = allEligible.length >= 3 ? allEligible
+        : [...new Map([...allEligible, ...fullPool].map(i => [i.id, i])).values()];
+
+      const commons   = paddedEligible.filter(i => i.rarity === 'common');
+      const uncommons = paddedEligible.filter(i => i.rarity === 'uncommon');
+      const rares     = paddedEligible.filter(i => i.rarity === 'rare');
+
+      STATE.merchantStock[key] = [
+        ...pick(commons,   1, 4).map(mark),
+        ...pick(uncommons, 1, 3).map(mark),
+        ...pick(rares,     0, 2).map(mark),
+      ].slice(0, 9);
+    }
+  }
+}
+
+function advanceTime() {
+  const prev = STATE.time;
+  STATE.time += 1;
+  const now  = STATE.time;
+  updateClock();
+  processStableTime();
+
+  const prevT = parseTime(prev);
+  const nowT  = parseTime(now);
+
+  // ── New month → restock merchant ──
+  if (nowT.month !== prevT.month || now === 1) {
+    generateMerchantStock();
+    stableNotify('🏪 The Merchant has restocked their wares!', '#ffd84a');
+    // Re-render merchant if currently open
+    const inMerchant = document.getElementById('town-screen').classList.contains('active') && activeTownTab === 2;
+    if (inMerchant) renderMerchantTab();
+  }
+
+  // ── Start of week 4 → items changing soon warning ──
+  if (nowT.week === 4 && nowT.day === 1 && nowT.hour === 0) {
+    stableNotify('🏪 Merchant stock changes at end of month!', '#ffd84a');
+  }
+}
+
+function updateClock() {
+  const el = document.getElementById('clock-display');
+  if (el) el.textContent = formatTime(STATE.time);
+}
+
+// ════════════════════════════════════════════════════════
+// STABLE
+// ════════════════════════════════════════════════════════
+
+function stableNotify(msg, color) {
+  const container = document.getElementById('stable-notifs');
+  const el = document.createElement('div');
+  el.className = 'stable-notif';
+  if (color) el.style.borderColor = color + '88';
+  el.textContent = msg;
+  container.appendChild(el);
+  requestAnimationFrame(() => { requestAnimationFrame(() => el.classList.add('show')); });
+  setTimeout(() => {
+    el.classList.remove('show');
+    el.classList.add('fade');
+    setTimeout(() => el.remove(), 400);
+  }, 4000);
+  const all = container.querySelectorAll('.stable-notif');
+  if (all.length > 4) all[0].remove();
+}
+
+function getStableKey() {
+  return `${STATE.pos.r},${STATE.pos.c}`;
+}
+
+function getActiveStable() {
+  const key = getStableKey();
+  if (!STATE.stables[key]) STATE.stables[key] = [];
+  return STATE.stables[key];
+}
+
+function processStableTime() {
+  // Called every hour. Processes ALL stables regardless of location.
+  const allStabled = Object.values(STATE.stables).flat();
+  if (allStabled.length === 0) return;
+  const now = STATE.time;
+  const inRanchStable = document.getElementById('ranch-screen')?.classList.contains('active') && activeRanchTab === 2;
+  const inRuinsStable = document.getElementById('ruins-screen')?.classList.contains('active') && activeRuinsTab === 2;
+  let needsRender = false;
+
+  Object.values(STATE.stables).forEach(stableArr => {
+    stableArr.forEach(m => {
+      const elData = ELEMENTS[m.element];
+
+      if (m.mp < m.maxMp) {
+        const mpPerHour = Math.max(1, Math.floor(m.int / 10));
+        const prevFull = m.mp >= m.maxMp;
+        m.mp = Math.min(m.maxMp, m.mp + mpPerHour);
+        if (!prevFull && m.mp >= m.maxMp) stableNotify(`${m.emoji} ${m.name} MP fully restored!`, elData.color);
+        needsRender = true;
+      }
+
+      const dayNow  = Math.floor(now / TIME.HOURS_PER_DAY);
+      const dayPrev = Math.floor((now - 1) / TIME.HOURS_PER_DAY);
+      if (dayNow !== dayPrev && m.hp < m.maxHp) {
+        const hpPerDay = Math.max(1, Math.floor(m.def / 8));
+        const prevFull = m.hp >= m.maxHp;
+        m.hp = Math.min(m.maxHp, m.hp + hpPerDay);
+        if (!prevFull && m.hp >= m.maxHp) stableNotify(`${m.emoji} ${m.name} HP fully restored!`, elData.color);
+        needsRender = true;
+      }
+
+      const weekNow  = Math.floor(now / TIME.HOURS_PER_WEEK);
+      const weekPrev = Math.floor((now - 1) / TIME.HOURS_PER_WEEK);
+      if (weekNow !== weekPrev) {
+        const prodChance = Math.min(0.9, m.level * 0.10);
+        if (m.hp >= m.maxHp && Math.random() < prodChance) {
+          const qty = 1 + Math.floor(Math.random() * 2);
+          STATE.resources[m.element] = (STATE.resources[m.element] || 0) + qty;
+          const r = ELEMENTAL_RESOURCES[m.element];
+          stableNotify(`${m.emoji} ${m.name} produced ${qty}x ${r.emoji} ${r.name}!`, elData.color);
+          needsRender = true;
+        }
+      }
+    });
+  });
+
+  if (needsRender && inRanchStable) renderRanchStableTab();
+  if (needsRender && inRuinsStable) renderRuinsStableTab();
+}
+
+function renderStableTab(tabElemId) {
+  const tab = document.getElementById(tabElemId);
+  if (!tab) return;
+  const key = getStableKey();
+  if (!STATE.stables[key]) STATE.stables[key] = [];
+  const stableArr = STATE.stables[key];
+  const allMons = [...STATE.party, ...STATE.bench];
+  const stabledEverywhere = new Set(Object.values(STATE.stables).flat().map(m => m.uid));
+  const t = parseTime(STATE.time);
+
+  const stableCards = stableArr.length === 0
+    ? '<div style="color:var(--dim);font-size:16px;margin-bottom:16px">No monsters in this stable.</div>'
+    : stableArr.map(m => {
+        const el = ELEMENTS[m.element];
+        const hpPct = Math.max(0, (m.hp / m.maxHp) * 100);
+        const mpPct = Math.max(0, (m.mp / m.maxMp) * 100);
+        const hpCol = hpPct < 30 ? '#ff3a3a' : hpPct < 60 ? '#ffd84a' : '#2aff7a';
+        const hpFull = m.hp >= m.maxHp;
+        const mpFull = m.mp >= m.maxMp;
+        const r = ELEMENTAL_RESOURCES[m.element];
+        const mpPerHour = Math.max(1, Math.floor(m.int / 10));
+        const hpPerDay  = Math.max(1, Math.floor(m.def / 8));
+        const prodChance = Math.min(90, m.level * 10);
+        return `<div class="panel-box" style="border-color:${el.color}44;margin-bottom:10px">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+            <span style="font-size:28px">${m.emoji}</span>
+            <div style="flex:1">
+              <div style="color:${el.color};font-size:19px">${m.name} <span style="color:var(--dim);font-size:13px">Lv.${m.level}</span></div>
+              <div style="font-size:13px;color:var(--dim)">${el.icon} ${m.element} · INT ${m.int} · DEF ${m.def}</div>
+            </div>
+            <button onclick="removeFromStable('${m.uid}')" style="background:#1a0a00;border:1px solid #ff6b2a;color:#ff9a6a;font-family:'VT323',monospace;font-size:15px;padding:4px 10px;border-radius:4px;cursor:pointer">← Retrieve</button>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;font-size:13px;margin-bottom:2px">
+            <span style="color:var(--dim)">HP</span>
+            <span style="color:${hpCol}">${m.hp}/${m.maxHp} ${hpFull ? '✓ Full' : `+${hpPerDay}/day`}</span>
+          </div>
+          <div class="bar-wrap" style="margin-bottom:6px"><div class="bar-fill" style="width:${hpPct}%;background:${hpCol}"></div></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;font-size:13px;margin-bottom:2px">
+            <span style="color:var(--dim)">MP</span>
+            <span style="color:#60a5fa">${m.mp}/${m.maxMp} ${mpFull ? '✓ Full' : `+${mpPerHour}/hr`}</span>
+          </div>
+          <div class="bar-wrap" style="margin-bottom:6px"><div class="bar-fill" style="width:${mpPct}%;background:#60a5fa"></div></div>
+          <div style="font-size:13px;color:${hpFull ? el.color : 'var(--dim)'};margin-top:4px">
+            ${hpFull ? `✨ ${r.emoji} ${r.name} · ${prodChance}% chance per week (Lv.${m.level})` : `⏳ Needs full HP to produce resources`}
+          </div>
+        </div>`;
+      }).join('');
+
+  const rosterCards = allMons.filter(m => !stabledEverywhere.has(m.uid)).map(m => {
+    const el = ELEMENTS[m.element];
+    const inParty = !!STATE.party.find(x => x.uid === m.uid);
+    const partyTooSmall = inParty && STATE.party.length <= 1;
+    return `<div class="panel-box" style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+      <span style="font-size:24px">${m.emoji}</span>
+      <div style="flex:1">
+        <div style="color:${el.color};font-size:17px">${m.name} <span style="color:var(--dim);font-size:13px">Lv.${m.level}${inParty ? ' [party]' : ' [bench]'}</span></div>
+        <div style="font-size:13px;color:${m.hp < m.maxHp ? '#ff6b6b' : 'var(--dim)'}">HP ${m.hp}/${m.maxHp} · MP ${m.mp}/${m.maxMp}</div>
+      </div>
+      <button onclick="addToStable('${m.uid}')" ${partyTooSmall ? 'disabled' : ''}
+        style="background:#0a1a10;border:1px solid ${partyTooSmall ? '#333' : 'var(--accent)'};color:${partyTooSmall ? '#333' : 'var(--accent)'};font-family:'VT323',monospace;font-size:15px;padding:4px 10px;border-radius:4px;cursor:${partyTooSmall ? 'not-allowed' : 'pointer'}"
+        title="${partyTooSmall ? 'Party must have at least 1 member' : ''}">
+        → Stable
+      </button>
+    </div>`;
+  }).join('') || '<div style="color:var(--dim);font-size:15px">All monsters are stabled elsewhere.</div>';
+
+  tab.innerHTML = `
+    <div style="font-size:18px;color:var(--dim);margin-bottom:6px">Leave monsters to rest and recover. Full-health monsters may produce elemental resources weekly.</div>
+    <div style="font-size:13px;color:var(--dim);margin-bottom:14px;background:#0a0a0a;border:1px solid #1a1a1a;border-radius:6px;padding:7px 10px">
+      🕰 ${formatTime(STATE.time)}&nbsp;&nbsp;·&nbsp;&nbsp;MP +INT/10 per move&nbsp;&nbsp;·&nbsp;&nbsp;HP +DEF/8 per day&nbsp;&nbsp;·&nbsp;&nbsp;Resources: Level×10% per week
+    </div>
+    <div style="font-size:14px;color:var(--accent);letter-spacing:2px;margin-bottom:8px">IN STABLE (${stableArr.length})</div>
+    ${stableCards}
+    <div style="font-size:14px;color:var(--accent);letter-spacing:2px;margin:14px 0 8px">YOUR ROSTER</div>
+    ${rosterCards}`;
+}
+
+function addToStable(uid) {
+  const allMons = [...STATE.party, ...STATE.bench];
+  const m = allMons.find(x => x.uid === uid);
+  if (!m) return;
+  const inParty = !!STATE.party.find(x => x.uid === uid);
+  if (inParty && STATE.party.length <= 1) return;
+  if (inParty) STATE.party = STATE.party.filter(x => x.uid !== uid);
+  else STATE.bench = STATE.bench.filter(x => x.uid !== uid);
+  const key = getStableKey();
+  if (!STATE.stables[key]) STATE.stables[key] = [];
+  STATE.stables[key].push(m);
+  renderRanchStableTab();
+  renderRuinsStableTab();
+  renderPartyList();
+}
+
+function removeFromStable(uid) {
+  const key = getStableKey();
+  const stableArr = STATE.stables[key] || [];
+  const m = stableArr.find(x => x.uid === uid);
+  if (!m) return;
+  STATE.stables[key] = stableArr.filter(x => x.uid !== uid);
+  STATE.party = STATE.party.filter(x => x.uid !== uid);
+  STATE.bench = STATE.bench.filter(x => x.uid !== uid);
+  STATE.bench.push(m);
+  renderRanchStableTab();
+  renderRuinsStableTab();
+  renderPartyList();
+  toast(`${m.emoji} ${m.name} retrieved from stable.`);
+}
+
+function updateLastBattleBtn() {
+  const btn = document.getElementById('last-battle-btn');
+  if (!btn) return;
+  const hasLog = STATE.lastBattleLog.length > 0;
+  const isVictory = STATE.lastBattleResult === 'victory';
+  btn.disabled = !hasLog;
+  btn.style.opacity = hasLog ? '1' : '0.35';
+  btn.style.cursor = hasLog ? 'pointer' : 'not-allowed';
+  btn.style.borderColor = hasLog ? (isVictory ? 'var(--accent)' : 'var(--danger)') : '#4a4a7a';
+  btn.style.color = hasLog ? (isVictory ? 'var(--accent)' : 'var(--danger)') : '#8888bb';
+  btn.textContent = hasLog
+    ? (isVictory ? '📜 LAST BATTLE — Victory' : '📜 LAST BATTLE — Defeat')
+    : '📜 LAST BATTLE';
+}
+
+function showLastBattleLog() {
+  if (!STATE.lastBattleLog.length) return;
+  const existing = document.getElementById('last-battle-overlay');
+  if (existing) existing.remove();
+
+  const isVictory = STATE.lastBattleResult === 'victory';
+  const overlay = document.createElement('div');
+  overlay.id = 'last-battle-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:#000000cc;z-index:400;display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;';
+
+  const box = document.createElement('div');
+  box.style.cssText = `background:var(--panel);border:2px solid ${isVictory ? 'var(--accent)' : 'var(--danger)'};border-radius:12px;padding:18px 20px;width:100%;max-width:500px;max-height:80vh;display:flex;flex-direction:column;font-family:'VT323',monospace;`;
+
+  const header = document.createElement('div');
+  header.style.cssText = `display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;`;
+  header.innerHTML = `
+    <span style="font-size:20px;color:${isVictory ? 'var(--accent)' : 'var(--danger)'}">
+      📜 LAST BATTLE — ${isVictory ? '⚔ VICTORY' : '💀 DEFEAT'}
+    </span>
+    <button onclick="document.getElementById('last-battle-overlay').remove()"
+      style="background:#1a0000;border:1px solid #ff3a3a;color:#ff6b6b;font-family:'VT323',monospace;font-size:18px;padding:2px 12px;border-radius:5px;cursor:pointer;">✕</button>`;
+
+  const logEl = document.createElement('div');
+  logEl.style.cssText = 'overflow-y:auto;flex:1;font-size:15px;line-height:1.6;';
+  logEl.innerHTML = STATE.lastBattleLog.map(line => {
+    const col = line.includes('💀') ? '#ff6b6b'
+              : line.includes('💥') ? '#ffd84a'
+              : line.includes('💎') ? '#a78bfa'
+              : line.includes('❤')  ? '#2aff7a'
+              : 'var(--dim)';
+    return `<div style="color:${col};border-bottom:1px solid #111;padding:3px 0">${line}</div>`;
+  }).join('');
+
+  box.appendChild(header);
+  box.appendChild(logEl);
+  overlay.appendChild(box);
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+}
+
+// ════════════════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════════════════
+renderMap();
+renderMapSide();
+updateTownBtn();
+updateDpadVisibility();
+updateClock();
+generateMerchantStock();
+</script>
+<!-- FLOATING DPAD (mobile only) -->
+<div id="dpad-float">
+  <div></div>
+  <button type="button" class="dpad-btn" onclick="dpadMove(-1,0)">▲</button>
+  <div></div>
+  <button type="button" class="dpad-btn" onclick="dpadMove(0,-1)">◀</button>
+  <div></div>
+  <button type="button" class="dpad-btn" onclick="dpadMove(0,1)">▶</button>
+  <div></div>
+  <button type="button" class="dpad-btn" onclick="dpadMove(1,0)">▼</button>
+  <div></div>
+</div>
+</body>
+</html>
